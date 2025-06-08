@@ -20,7 +20,7 @@ public class CondicaoEstrategia {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "estrategia_id", nullable = false)
     private Estrategia estrategia;
 
@@ -35,5 +35,12 @@ public class CondicaoEstrategia {
 
     @Column(name = "date_created", nullable = false, updatable = false, insertable = false)
     private LocalDateTime dateCreated;
+
+    @PrePersist
+    public void prePersist() {
+        if (dateCreated == null) {
+            dateCreated = LocalDateTime.now();
+        }
+    }
 
 }

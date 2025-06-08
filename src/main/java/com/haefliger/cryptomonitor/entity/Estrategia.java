@@ -38,4 +38,11 @@ public class Estrategia {
 
     @OneToMany(mappedBy = "estrategia", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CondicaoEstrategia> condicoes;
+
+    @PrePersist
+    public void prePersist() {
+        if (dateCreated == null) {
+            dateCreated = LocalDateTime.now();
+        }
+    }
 }

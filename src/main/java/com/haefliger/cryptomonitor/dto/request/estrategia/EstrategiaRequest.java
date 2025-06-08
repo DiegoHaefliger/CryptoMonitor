@@ -1,6 +1,7 @@
 package com.haefliger.cryptomonitor.dto.request.estrategia;
 
 import com.haefliger.cryptomonitor.validation.NotEmptyWithFieldMessage;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
@@ -9,17 +10,25 @@ import java.util.List;
 
 @Data
 public class EstrategiaRequest {
-    @NotEmptyWithFieldMessage(fieldName = "symbol")
-    private String symbol;
+    @Schema(description = "Nome para a estratégia", example = "Estratégia Bitcoin RSI")
+    @NotEmptyWithFieldMessage(fieldName = "nome")
+    private String nome;
 
-    @NotEmptyWithFieldMessage(fieldName = "interval")
-    private String interval;
+    @Schema(description = "Símbolo", example = "BTCUSDT")
+    @NotEmptyWithFieldMessage(fieldName = "simbolo")
+    private String simbolo;
 
+    @Schema(description = "Tempo de intervalo", example = "1h")
+    @NotEmptyWithFieldMessage(fieldName = "intervalo")
+    private String intervalo;
+
+    @Schema(description = "Operação lógica", example = "AND")
+    @NotEmptyWithFieldMessage(fieldName = "operadorLogico")
+    private String operadorLogico;
+
+    @Schema(description = "Lista de condições")
     @NotEmptyWithFieldMessage(fieldName = "conditions")
     @NotEmpty
     @Valid
-    private List<CondicaoRequest> conditions;
-
-    @NotEmptyWithFieldMessage(fieldName = "logic")
-    private String logic;
+    private List<CondicaoRequest> condicoes;
 }
