@@ -3,6 +3,61 @@
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="2-create-table-estrategias" author="diego.haefliger">
+        <createTable tableName="estrategias">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="nome" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="simbolo" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="intervalo" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="operador_logico" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_created" type="TIMESTAMP"/>
+        </createTable>
+        <addDefaultValue tableName="estrategias" columnName="date_created" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        <sql>
+            ALTER TABLE estrategias
+            ADD CONSTRAINT chk_operador_logico CHECK (operador_logico IN ('AND', 'OR'));
+        </sql>
+    </changeSet>
+
+    <changeSet id="3-create-table-condicoes-estrategia" author="diego.haefliger">
+        <createTable tableName="condicoes_estrategia">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="estrategia_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tipo_indicador" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="operador" type="VARCHAR(5)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="valor" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_created" type="TIMESTAMP"/>
+        </createTable>
+        <addDefaultValue tableName="condicoes_estrategia" columnName="date_created" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        <addForeignKeyConstraint
+                baseTableName="condicoes_estrategia"
+                baseColumnNames="estrategia_id"
+                constraintName="fk_estrategia"
+                referencedTableName="estrategias"
+                referencedColumnNames="id"
+                onDelete="CASCADE"/>
+    </changeSet>
 
 </databaseChangeLog>
