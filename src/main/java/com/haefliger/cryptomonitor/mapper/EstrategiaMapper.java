@@ -16,7 +16,7 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface EstrategiaMapper {
 
-    Estrategia requestToEntityEstrategia(EstrategiaRequest estrategiaRequest);
+    Estrategia requestToEntityEstrategia(EstrategiaRequest estrategiaRequest, Boolean ativo);
 
     List<CondicaoEstrategia> requestToEntityCondicaoEstrategia(List<CondicaoRequest> condicaoRequest);
 

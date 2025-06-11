@@ -73,5 +73,14 @@
         </update>
     </changeSet>
 
+    <!--    adiciona novo campo "date_last_update" na tabela estrategias -->
+    <changeSet id="5-add-column-date_last_update-to-estrategias" author="diego.haefliger">
+        <addColumn tableName="estrategias">
+            <column name="date_last_update" type="TIMESTAMP">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 
 </databaseChangeLog>

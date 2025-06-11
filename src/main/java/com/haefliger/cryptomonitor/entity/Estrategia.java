@@ -1,10 +1,7 @@
 package com.haefliger.cryptomonitor.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,6 +11,7 @@ import java.util.List;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Table(name = "estrategias")
 public class Estrategia {
 
@@ -39,8 +37,11 @@ public class Estrategia {
     @Column(name = "date_created", nullable = false, updatable = false, insertable = false)
     private LocalDateTime dateCreated;
 
+    @Column(name = "date_last_update")
+    private LocalDateTime dateLastUpdate;
+
     @Column(name = "ativo", nullable = false)
-    private boolean ativo = true;
+    private Boolean ativo;
 
     @PrePersist
     public void prePersist() {

@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -38,8 +39,8 @@ public class EstrategiaServiceImpl implements EstrategiaService {
     }
 
     private Estrategia mapRequestToEstrategia(EstrategiaRequest estrategiaRequest) {
-        final Estrategia estrategia = mapper.requestToEntityEstrategia(estrategiaRequest);
-        final List<CondicaoEstrategia> condicoes = mapper.requestToEntityCondicaoEstrategia(estrategiaRequest.getCondicoes());
+        Estrategia estrategia = mapper.requestToEntityEstrategia(estrategiaRequest, true);
+        List<CondicaoEstrategia> condicoes = mapper.requestToEntityCondicaoEstrategia(estrategiaRequest.getCondicoes());
         condicoes.forEach(cond -> cond.setEstrategia(estrategia));
         estrategia.setCondicoes(condicoes);
         return estrategia;
@@ -55,5 +56,32 @@ public class EstrategiaServiceImpl implements EstrategiaService {
             log.error("Erro ao buscar estratégias: {}", e.getMessage(), e);
             throw new RuntimeException("Erro ao buscar estratégias", e);
         }
+    }
+
+    @Override
+    public void deletarEstrategia(Long id) {
+        try {
+            log.info("Deletando estratégia com id: {}", id);
+            repository.deleteById(id);
+        } catch (RuntimeException e) {
+            log.error("Erro ao deletar estratégia com id {}: {}", id, e.getMessage(), e);
+            throw new RuntimeException("Erro ao deletar estratégia", e);
+        }
+    }
+
+    @Override
+    public void ativarDesativarEstrategia(Long id, Boolean ativo) {
+        try {
+            log.info("Alterando status da estratégia com id: {} para ativo: {}", id, ativo);
+            Estrategia estrategia = repository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Estratégia não encontrada"));
+            estrategia.setAtivo(ativo);
+            estrategia.setDateLastUpdate(LocalDateTime.now());
+            repository.save(estrategia);
+        } catch (RuntimeException e) {
+            log.error("Erro ao alterar status estratégia com id {}: {}", id, e.getMessage(), e);
+            throw new RuntimeException("Erro ao alterar status da estratégia", e);
+        }
+
     }
 }

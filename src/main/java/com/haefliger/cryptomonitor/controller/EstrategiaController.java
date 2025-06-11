@@ -16,7 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "Estrategia", description = "Endpoints for managing estrategias")
+@Tag(name = "Estratégia", description = "Endpoints para manipular estratégias de monitoramento de criptomoedas")
 @Validated
 @AllArgsConstructor
 @RestController
@@ -40,7 +40,7 @@ public class EstrategiaController {
 
     @Operation(summary = "Buscar estratégia", description = "Buscar estratégia existente",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Estratégia atualizada com sucesso"),
+                    @ApiResponse(responseCode = "200", description = "Estratégia retornada com sucesso"),
                     @ApiResponse(responseCode = "400", description = "Requisição inválida", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class)))
             }
     )
@@ -48,6 +48,18 @@ public class EstrategiaController {
     @ResponseStatus(HttpStatus.OK)
     public BuscarEstrategiaResponse buscarEstrategia(@RequestParam(required = false) Boolean ativo) {
         return estrategiaService.buscarEstrategia(ativo);
+    }
+
+    @DeleteMapping
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Deletar estratégia", description = "Deleta uma estratégia existente",
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "Estratégia deletada com sucesso"),
+                    @ApiResponse(responseCode = "400", description = "Requisição inválida", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class)))
+            }
+    )
+    public void deletarEstrategia(@RequestParam Long id) {
+        estrategiaService.deletarEstrategia(id);
     }
 
 }

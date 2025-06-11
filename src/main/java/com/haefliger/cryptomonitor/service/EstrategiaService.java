@@ -9,4 +9,8 @@ public interface EstrategiaService {
     SalvarEstrategiaResponse salvarEstrategia(EstrategiaRequest estrategiaRequest);
 
     BuscarEstrategiaResponse buscarEstrategia(Boolean ativo);
+
+    void deletarEstrategia(Long id);
+
+    void ativarDesativarEstrategia(Long id, Boolean ativo);
 }
