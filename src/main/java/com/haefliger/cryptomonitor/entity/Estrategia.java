@@ -21,6 +21,9 @@ public class Estrategia {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @OneToMany(mappedBy = "estrategia", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CondicaoEstrategia> condicoes;
+
     @Column(nullable = false, length = 100)
     private String nome;
 
@@ -36,8 +39,8 @@ public class Estrategia {
     @Column(name = "date_created", nullable = false, updatable = false, insertable = false)
     private LocalDateTime dateCreated;
 
-    @OneToMany(mappedBy = "estrategia", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CondicaoEstrategia> condicoes;
+    @Column(name = "ativo", nullable = false)
+    private boolean ativo = true;
 
     @PrePersist
     public void prePersist() {

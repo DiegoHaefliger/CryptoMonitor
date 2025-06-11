@@ -1,7 +1,8 @@
 package com.haefliger.cryptomonitor.controller;
 
 import com.haefliger.cryptomonitor.dto.request.estrategia.EstrategiaRequest;
-import com.haefliger.cryptomonitor.dto.response.EstrategiaResponse;
+import com.haefliger.cryptomonitor.dto.response.estrategia.BuscarEstrategiaResponse;
+import com.haefliger.cryptomonitor.dto.response.estrategia.SalvarEstrategiaResponse;
 import com.haefliger.cryptomonitor.exception.dto.ApiErrorResponse;
 import com.haefliger.cryptomonitor.service.EstrategiaService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,11 +12,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Estrategia", description = "Endpoints for managing estrategias")
 @Validated
@@ -33,9 +32,22 @@ public class EstrategiaController {
             }
     )
     @PostMapping("")
-    public EstrategiaResponse salvarEstrategia(@RequestBody @Valid EstrategiaRequest estrategiaRequest) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public SalvarEstrategiaResponse salvarEstrategia(@RequestBody @Valid EstrategiaRequest estrategiaRequest) {
 
         return estrategiaService.salvarEstrategia(estrategiaRequest);
+    }
+
+    @Operation(summary = "Buscar estratégia", description = "Buscar estratégia existente",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Estratégia atualizada com sucesso"),
+                    @ApiResponse(responseCode = "400", description = "Requisição inválida", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class)))
+            }
+    )
+    @GetMapping("")
+    @ResponseStatus(HttpStatus.OK)
+    public BuscarEstrategiaResponse buscarEstrategia(@RequestParam(required = false) Boolean ativo) {
+        return estrategiaService.buscarEstrategia(ativo);
     }
 
 }
