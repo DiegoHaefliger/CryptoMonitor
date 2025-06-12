@@ -29,7 +29,7 @@ public class EstrategiaServiceImpl implements EstrategiaService {
     public SalvarEstrategiaResponse salvarEstrategia(EstrategiaRequest estrategiaRequest) {
         try {
             log.info("Salvando estratégia");
-            final Estrategia estrategia = mapRequestToEstrategia(estrategiaRequest);
+            final Estrategia estrategia = mapInsertEstrategia(estrategiaRequest);
             final Estrategia savedEstrategia = repository.save(estrategia);
             return mapper.longToSalvarEstrategiaResponse(savedEstrategia.getId());
         } catch (RuntimeException e) {
@@ -38,7 +38,7 @@ public class EstrategiaServiceImpl implements EstrategiaService {
         }
     }
 
-    private Estrategia mapRequestToEstrategia(EstrategiaRequest estrategiaRequest) {
+    private Estrategia mapInsertEstrategia(EstrategiaRequest estrategiaRequest) {
         Estrategia estrategia = mapper.requestToEntityEstrategia(estrategiaRequest, true);
         List<CondicaoEstrategia> condicoes = mapper.requestToEntityCondicaoEstrategia(estrategiaRequest.getCondicoes());
         condicoes.forEach(cond -> cond.setEstrategia(estrategia));
@@ -70,18 +70,22 @@ public class EstrategiaServiceImpl implements EstrategiaService {
     }
 
     @Override
-    public void ativarDesativarEstrategia(Long id, Boolean ativo) {
+    public void statusEstrategia(Long id, Boolean ativo, Boolean permanente) {
         try {
             log.info("Alterando status da estratégia com id: {} para ativo: {}", id, ativo);
             Estrategia estrategia = repository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Estratégia não encontrada"));
-            estrategia.setAtivo(ativo);
-            estrategia.setDateLastUpdate(LocalDateTime.now());
+            mapUpdateEstrategia(estrategia, ativo, permanente);
             repository.save(estrategia);
         } catch (RuntimeException e) {
             log.error("Erro ao alterar status estratégia com id {}: {}", id, e.getMessage(), e);
             throw new RuntimeException("Erro ao alterar status da estratégia", e);
         }
+    }
 
+    private void mapUpdateEstrategia(Estrategia estrategia, Boolean ativo, Boolean permanente) {
+        estrategia.setAtivo(ativo);
+        estrategia.setPermanente(permanente);
+        estrategia.setDateLastUpdate(LocalDateTime.now());
     }
 }

@@ -4,6 +4,7 @@ import com.haefliger.cryptomonitor.validation.NotEmptyWithFieldMessage;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
 
@@ -27,6 +28,10 @@ public class EstrategiaRequest {
     @Schema(description = "Operação lógica", example = "AND")
     @NotEmptyWithFieldMessage(fieldName = "operadorLogico")
     private String operadorLogico;
+
+    @Schema(description = "Indica se essa estratégia deve ser executada permanentemente", example = "true")
+    @NotNull(message = "Campo 'permanente' não pode ser vazio")
+    private Boolean permanente;
 
     @Schema(description = "Lista de condições")
     @NotEmptyWithFieldMessage(fieldName = "conditions")

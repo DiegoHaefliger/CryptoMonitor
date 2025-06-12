@@ -25,7 +25,9 @@ public class BuscarEstrategiaListaResponse {
     private String intervalo;
     private String operadorLogico;
     private boolean ativo;
+    private boolean permanente;
     private LocalDateTime dateCreated;
+    private LocalDateTime dateLastUpdate;
     private List<BuscarEstrategiaCondicaoResponse> condicoes;
     
 }

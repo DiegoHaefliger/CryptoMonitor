@@ -12,5 +12,5 @@ public interface EstrategiaService {
 
     void deletarEstrategia(Long id);
 
-    void ativarDesativarEstrategia(Long id, Boolean ativo);
+    void statusEstrategia(Long id, Boolean ativo, Boolean permanente);
 }

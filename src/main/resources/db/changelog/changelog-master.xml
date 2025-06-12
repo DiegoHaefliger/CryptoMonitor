@@ -82,5 +82,17 @@
         </addColumn>
     </changeSet>
 
+    <!--    adiciona novo campo "permanente" na tabela estrategias -->
+    <changeSet id="6-add-column-permanente-to-estrategias" author="diego.haefliger">
+        <addColumn tableName="estrategias">
+            <column name="permanente" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <update tableName="estrategias">
+            <column name="permanente" valueBoolean="false"/>
+        </update>
+    </changeSet>
+
 
 </databaseChangeLog>

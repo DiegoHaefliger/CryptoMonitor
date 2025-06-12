@@ -62,4 +62,16 @@ public class EstrategiaController {
         estrategiaService.deletarEstrategia(id);
     }
 
+    @PutMapping("/status")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Ativar/Desativar estratégia", description = "Ativar/Desativar uma estratégia existente",
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "Estratégia Ativada/Desativada com sucesso"),
+                    @ApiResponse(responseCode = "400", description = "Requisição inválida", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiErrorResponse.class)))
+            }
+    )
+    public void statusEstrategia(@RequestParam Long id, @RequestParam Boolean ativo, @RequestParam Boolean permanente) {
+        estrategiaService.statusEstrategia(id, ativo, permanente);
+    }
+
 }

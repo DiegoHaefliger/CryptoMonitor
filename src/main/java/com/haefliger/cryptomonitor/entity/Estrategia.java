@@ -43,6 +43,9 @@ public class Estrategia {
     @Column(name = "ativo", nullable = false)
     private Boolean ativo;
 
+    @Column(name = "permanente", nullable = false)
+    private Boolean permanente;
+
     @PrePersist
     public void prePersist() {
         if (dateCreated == null) {
