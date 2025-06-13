@@ -8,6 +8,7 @@ import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.mapper.EstrategiaMapper;
 import com.haefliger.cryptomonitor.repository.EstrategiaRepository;
 import com.haefliger.cryptomonitor.service.EstrategiaService;
+import com.haefliger.cryptomonitor.service.KafkaService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static com.haefliger.cryptomonitor.enums.KafkaEnum.ESTRATEGIA_INSERT;
+
 @Service
 @AllArgsConstructor
 @Slf4j
@@ -23,6 +26,7 @@ public class EstrategiaServiceImpl implements EstrategiaService {
 
     private final EstrategiaRepository repository;
     private final EstrategiaMapper mapper;
+    private final KafkaService kafkaService;
 
     @Override
     @Transactional
@@ -31,6 +35,8 @@ public class EstrategiaServiceImpl implements EstrategiaService {
             log.info("Salvando estratégia");
             final Estrategia estrategia = mapInsertEstrategia(estrategiaRequest);
             final Estrategia savedEstrategia = repository.save(estrategia);
+            kafkaService.sendMessage(ESTRATEGIA_INSERT.getTopic(), estrategia.getId().toString(), estrategia);
+
             return mapper.longToSalvarEstrategiaResponse(savedEstrategia.getId());
         } catch (RuntimeException e) {
             log.error("Erro ao salvar estratégia: {}", e.getMessage(), e);
