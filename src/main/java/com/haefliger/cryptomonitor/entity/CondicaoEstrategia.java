@@ -1,5 +1,6 @@
 package com.haefliger.cryptomonitor.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -22,6 +23,7 @@ public class CondicaoEstrategia {
 
     @ManyToOne
     @JoinColumn(name = "estrategia_id", nullable = false)
+    @JsonIgnore
     private Estrategia estrategia;
 
     @Column(name = "tipo_indicador", nullable = false, length = 20)
