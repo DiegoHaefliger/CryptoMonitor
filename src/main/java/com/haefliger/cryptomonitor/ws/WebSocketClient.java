@@ -12,6 +12,7 @@ import java.net.URI;
 import java.net.URL;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,7 +27,7 @@ import static com.haefliger.cryptomonitor.utils.Constants.*;
 @Getter
 public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
 
-    private final Map<String, List<String>> symbolIntervals;
+    private Map<String, List<String>> symbolIntervals;
     private final PriceHandler handler;
     private final Gson gson = new Gson();
 
@@ -38,11 +39,17 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
     }
 
     private void loadHistoricalData() {
+
+        // por segurança, limpa os dados antigos antes de carregar novos
+        if (handler instanceof MultiSymbolPriceHandler multiHandler) {
+            multiHandler.clearAll();
+        }
+
         symbolIntervals.forEach((symbol, intervals) -> intervals.forEach(interval -> {
             try {
                 fetchHistoricalKlines(symbol, interval);
             } catch (Exception e) {
-                log.error("Failed to fetch historical klines for {} [{}]", symbol, interval, e);
+                log.error("Falha ao buscar klines históricos para {} [{}]", symbol, interval, e);
             }
         }));
     }
@@ -56,18 +63,20 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
             String json = reader.lines().collect(Collectors.joining());
             JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
             JsonArray data = obj.getAsJsonObject("result").getAsJsonArray("list");
+            List<PricePoint> pricePoints = new java.util.ArrayList<>();
             for (JsonElement el : data) {
                 JsonArray kline = el.getAsJsonArray();
                 double close = kline.get(4).getAsDouble();
                 long timestamp = kline.get(0).getAsLong();
-                handler.addPrice(symbol, interval, close, Instant.ofEpochMilli(timestamp), false);
+                pricePoints.add(new PricePoint(close, Instant.ofEpochMilli(timestamp)));
             }
+            handler.addPricesHistorical(symbol, interval, pricePoints);
         }
     }
 
     @Override
     public void onOpen(ServerHandshake handshakedata) {
-        log.info("WebSocket Opened");
+        log.info("WebSocket Aberto");
         List<String> args = symbolIntervals.entrySet().stream()
                 .flatMap(entry -> entry.getValue().stream().map(interval -> KLINE_PREFIX + interval + "." + entry.getKey()))
                 .toList();
@@ -99,17 +108,44 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
         if (data.has("confirm") && data.get("confirm").getAsBoolean()) {
             double close = data.get("close").getAsDouble();
             long timestamp = data.get("timestamp").getAsLong();
-            handler.addPrice(symbol, interval, close, Instant.ofEpochMilli(timestamp), true);
+            handler.addPrice(symbol, interval, close, Instant.ofEpochMilli(timestamp));
         }
     }
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
-        log.info("WebSocket Closed: {}", reason);
+        log.info("WebSocket Fechado: {}", reason);
     }
 
     @Override
     public void onError(Exception ex) {
-        log.error("WebSocket Error", ex);
+        log.error("Erro no WebSocket", ex);
+    }
+
+    public void updateSubscriptions(Map<String, List<String>> newSymbolIntervals) {
+        // Unsubscribe from old topics
+        List<String> oldArgs = symbolIntervals.entrySet().stream()
+                .flatMap(entry -> entry.getValue().stream().map(interval -> KLINE_PREFIX + interval + "." + entry.getKey()))
+                .toList();
+        String unsubscribeMsg = gson.toJson(Map.of(
+                OP, "unsubscribe",
+                ARGS, oldArgs
+        ));
+        send(unsubscribeMsg);
+
+        // Subscribe to new topics
+        List<String> newArgs = newSymbolIntervals.entrySet().stream()
+                .flatMap(entry -> entry.getValue().stream().map(interval -> KLINE_PREFIX + interval + "." + entry.getKey()))
+                .toList();
+        String subscribeMsg = gson.toJson(Map.of(
+                OP, SUBSCRIBE,
+                ARGS, newArgs
+        ));
+        send(subscribeMsg);
+
+        // Atualiza o atributo interno para refletir os novos símbolos/intervalos
+        this.symbolIntervals = Collections.unmodifiableMap(new HashMap<>(newSymbolIntervals));
+        // Baixa o histórico para novos símbolos/intervalos
+        loadHistoricalData();
     }
 }

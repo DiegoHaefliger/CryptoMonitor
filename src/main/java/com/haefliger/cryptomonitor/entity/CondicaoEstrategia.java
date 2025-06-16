@@ -2,18 +2,18 @@ package com.haefliger.cryptomonitor.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
+@EqualsAndHashCode(exclude = {"estrategia"})
+@ToString(exclude = {"estrategia"})
+@Entity
 @Table(name = "condicoes_estrategia")
 public class CondicaoEstrategia {
 
@@ -35,7 +35,7 @@ public class CondicaoEstrategia {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String valor;
 
-    @Column(name = "date_created", nullable = false, updatable = false, insertable = false)
+    @Column(name = "date_created", nullable = false)
     private LocalDateTime dateCreated;
 
     @PrePersist

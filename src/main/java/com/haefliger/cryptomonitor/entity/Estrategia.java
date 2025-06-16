@@ -8,10 +8,12 @@ import java.util.List;
 
 @Getter
 @Setter
-@Entity
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(exclude = {"condicoes"})
+@ToString(exclude = {"condicoes"})
+@Entity
 @Table(name = "estrategias")
 public class Estrategia {
 
@@ -34,7 +36,7 @@ public class Estrategia {
     @Column(name = "operador_logico", nullable = false, length = 10)
     private String operadorLogico;
 
-    @Column(name = "date_created", nullable = false, updatable = false, insertable = false)
+    @Column(name = "date_created", nullable = false)
     private LocalDateTime dateCreated;
 
     @Column(name = "date_last_update")
@@ -50,6 +52,12 @@ public class Estrategia {
     public void prePersist() {
         if (dateCreated == null) {
             dateCreated = LocalDateTime.now();
+        }
+        if (ativo == null) {
+            ativo = Boolean.TRUE;
+        }
+        if (permanente == null) {
+            permanente = Boolean.FALSE;
         }
     }
 }

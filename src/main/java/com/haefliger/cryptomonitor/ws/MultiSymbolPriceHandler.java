@@ -20,20 +20,33 @@ public class MultiSymbolPriceHandler implements PriceHandler {
     private final Map<String, Map<String, List<PricePoint>>> priceMap = new HashMap<>();
 
     @Override
-    public synchronized void addPrice(String symbol, String interval, double price, Instant timestamp, boolean removeOldest) {
+    public synchronized void addPrice(String symbol, String interval, double price, Instant timestamp) {
         List<PricePoint> prices = priceMap
                 .computeIfAbsent(symbol, k -> new HashMap<>())
                 .computeIfAbsent(interval, k -> new ArrayList<>());
 
         prices.add(new PricePoint(price, timestamp));
+        prices.sort(Comparator.comparing(PricePoint::getTimestamp).reversed());
 
-        if (removeOldest && prices.size() > LIMIT_RECORDS) {
+        if (prices.size() > LIMIT_RECORDS) {
             prices.remove(prices.size() - 1);
         }
 
         if (prices.size() == LIMIT_RECORDS) {
-            prices.sort(Comparator.comparing(PricePoint::getTimestamp).reversed());
-            log.info("Added price for {} [{}]: {} at {}", symbol, interval, prices.get(0).getPrice(), prices.get(0).getTimestamp());
+            log.info("Preço adicionado para {} [{}]: {} em {}", symbol, interval, prices.get(0).getPrice(), prices.get(0).getTimestamp());
+        }
+    }
+
+    @Override
+    public synchronized void addPricesHistorical(String symbol, String interval, List<PricePoint> prices) {
+        List<PricePoint> existingPrices = priceMap
+                .computeIfAbsent(symbol, k -> new HashMap<>())
+                .computeIfAbsent(interval, k -> new ArrayList<>());
+        existingPrices.addAll(prices);
+        existingPrices.sort(Comparator.comparing(PricePoint::getTimestamp).reversed());
+
+        if (existingPrices.size() >= LIMIT_RECORDS) {
+            log.info("Preços adicionados para {} [{}]: {} em {}", symbol, interval, existingPrices.get(0).getPrice(), existingPrices.get(0).getTimestamp());
         }
     }
 
@@ -44,11 +57,7 @@ public class MultiSymbolPriceHandler implements PriceHandler {
         );
     }
 
-    public Set<String> getTrackedSymbols() {
-        return priceMap.keySet();
-    }
-
-    public Set<String> getTrackedIntervals(String symbol) {
-        return priceMap.getOrDefault(symbol, Collections.emptyMap()).keySet();
+    public void clearAll() {
+        priceMap.clear();
     }
 }
