@@ -3,7 +3,6 @@ package com.haefliger.cryptomonitor.ws;
 import com.google.gson.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
 import java.io.BufferedReader;
@@ -25,13 +24,13 @@ import static com.haefliger.cryptomonitor.utils.Constants.*;
  */
 @Slf4j
 @Getter
-public class BybitWebSocketClient extends WebSocketClient {
+public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
 
     private final Map<String, List<String>> symbolIntervals;
     private final PriceHandler handler;
     private final Gson gson = new Gson();
 
-    public BybitWebSocketClient(Map<String, List<String>> symbolIntervals, PriceHandler handler) throws Exception {
+    public WebSocketClient(Map<String, List<String>> symbolIntervals, PriceHandler handler) throws Exception {
         super(new URI(WEBSOCKET_URL_LINEAR));
         this.symbolIntervals = Collections.unmodifiableMap(symbolIntervals);
         this.handler = handler;

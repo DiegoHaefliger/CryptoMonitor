@@ -9,15 +9,16 @@ import com.haefliger.cryptomonitor.mapper.EstrategiaMapper;
 import com.haefliger.cryptomonitor.repository.EstrategiaRepository;
 import com.haefliger.cryptomonitor.service.EstrategiaService;
 import com.haefliger.cryptomonitor.service.KafkaService;
+import com.haefliger.cryptomonitor.ws.WebSocketService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-
-import static com.haefliger.cryptomonitor.enums.KafkaEnum.ESTRATEGIA_INSERT;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -27,6 +28,7 @@ public class EstrategiaServiceImpl implements EstrategiaService {
     private final EstrategiaRepository repository;
     private final EstrategiaMapper mapper;
     private final KafkaService kafkaService;
+    private final WebSocketService webSocketService;
 
     @Override
     @Transactional
@@ -35,7 +37,8 @@ public class EstrategiaServiceImpl implements EstrategiaService {
             log.info("Salvando estratégia");
             final Estrategia estrategia = mapInsertEstrategia(estrategiaRequest);
             final Estrategia savedEstrategia = repository.save(estrategia);
-            kafkaService.sendMessage(ESTRATEGIA_INSERT.getTopic(), estrategia.getId().toString(), estrategia);
+//            kafkaService.sendMessage(ESTRATEGIA_INSERT.getTopic(), estrategia.getId().toString(), estrategia);
+            atualizaEstrategiasWS();
 
             return mapper.longToSalvarEstrategiaResponse(savedEstrategia.getId());
         } catch (RuntimeException e) {
@@ -93,5 +96,37 @@ public class EstrategiaServiceImpl implements EstrategiaService {
         estrategia.setAtivo(ativo);
         estrategia.setPermanente(permanente);
         estrategia.setDateLastUpdate(LocalDateTime.now());
+    }
+
+
+    @Async
+    private void atualizaEstrategiasWS() {
+        try {
+            log.info("Retorna estratégias para o WS");
+            List<Estrategia> estrategias = repository.findByAtivo(true);
+            // TODO: salvar estratégias no cache para utilizar no WebSocket
+
+            Map<String, List<String>> symbolIntervals = estrategias.stream()
+                    .collect(Collectors.groupingBy(
+                            Estrategia::getSimbolo,
+                            Collectors.mapping(Estrategia::getIntervalo, Collectors.toSet())
+                    ))
+                    .entrySet().stream()
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            entry -> {
+                                Set<String> intervals = new HashSet<>(entry.getValue());
+                                intervals.add("1");
+                                List<String> intervalList = new ArrayList<>(intervals);
+                                Collections.sort(intervalList);
+                                return intervalList;
+                            }
+                    ));
+
+            webSocketService.conect(symbolIntervals);
+        } catch (RuntimeException e) {
+            log.error("Erro ao Retorna estratégias para o WS: ", e);
+            throw new RuntimeException("Erro ao Retorna estratégias para o WS", e);
+        }
     }
 }

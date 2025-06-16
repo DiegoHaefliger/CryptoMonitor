@@ -21,23 +21,19 @@ public class MultiSymbolPriceHandler implements PriceHandler {
 
     @Override
     public synchronized void addPrice(String symbol, String interval, double price, Instant timestamp, boolean removeOldest) {
-        priceMap
+        List<PricePoint> prices = priceMap
                 .computeIfAbsent(symbol, k -> new HashMap<>())
-                .computeIfAbsent(interval, k -> new ArrayList<>())
-                .add(new PricePoint(price, timestamp));
+                .computeIfAbsent(interval, k -> new ArrayList<>());
 
-        // ordenar os preços por timestamp de forma decrescente
-        priceMap.get(symbol).get(interval).sort(Comparator.comparing(PricePoint::getTimestamp).reversed());
+        prices.add(new PricePoint(price, timestamp));
 
-        if (removeOldest) {
-            List<PricePoint> prices = priceMap.get(symbol).get(interval);
-            if (prices.size() > LIMIT_RECORDS) {
-                prices.remove(prices.size() - 1);
-            }
+        if (removeOldest && prices.size() > LIMIT_RECORDS) {
+            prices.remove(prices.size() - 1);
         }
 
-        if (priceMap.get(symbol).get(interval).size() == LIMIT_RECORDS) {
-            log.info("Added price for {} [{}]: {} at {}", symbol, interval, price, timestamp);
+        if (prices.size() == LIMIT_RECORDS) {
+            prices.sort(Comparator.comparing(PricePoint::getTimestamp).reversed());
+            log.info("Added price for {} [{}]: {} at {}", symbol, interval, prices.get(0).getPrice(), prices.get(0).getTimestamp());
         }
     }
 

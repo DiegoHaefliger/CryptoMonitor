@@ -8,7 +8,7 @@ import java.util.List;
 @Slf4j
 public class WebSocketConnectionManager {
     @Getter
-    private BybitWebSocketClient client;
+    private WebSocketClient client;
     private final PriceHandler handler;
     private final Map<String, List<String>> symbolIntervals;
 
@@ -22,7 +22,7 @@ public class WebSocketConnectionManager {
             log.info("WebSocket already open. Disconnecting before reconnecting...");
             disconnect();
         }
-        client = new BybitWebSocketClient(symbolIntervals, handler);
+        client = new WebSocketClient(symbolIntervals, handler);
         client.connect();
         log.info("WebSocket connection initiated.");
     }
