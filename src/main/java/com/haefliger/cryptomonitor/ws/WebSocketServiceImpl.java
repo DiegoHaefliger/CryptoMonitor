@@ -3,7 +3,7 @@ package com.haefliger.cryptomonitor.ws;
 
 import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.mapper.EstrategiaWebSocketMapper;
-import com.haefliger.cryptomonitor.repository.EstrategiaRepository;
+import com.haefliger.cryptomonitor.service.RedisService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,8 +23,8 @@ public class WebSocketServiceImpl implements WebSocketService {
 
     private static final MultiSymbolPriceHandler handler = new MultiSymbolPriceHandler();
     private static WebSocketConnectionManager wsManager = null;
-    private final EstrategiaRepository repository;
     private final EstrategiaWebSocketMapper estrategiaWebSocketMapper;
+    private final RedisService redisService;
 
     @Override
     public synchronized void conect(Map<String, List<String>> symbolIntervals) {
@@ -52,8 +52,7 @@ public class WebSocketServiceImpl implements WebSocketService {
     public void atualizaEstrategiasWS() {
         try {
             log.info("Retorna estratégias para o WS");
-            List<Estrategia> estrategias = repository.findByAtivo(true);
-            // TODO: salvar estratégias no cache para utilizar no WebSocket
+            List<Estrategia> estrategias = redisService.buscarEstrategiasAtivasRedis();
 
             Map<String, List<String>> symbolIntervals = estrategiaWebSocketMapper.toSymbolIntervals(estrategias);
             conect(symbolIntervals);
