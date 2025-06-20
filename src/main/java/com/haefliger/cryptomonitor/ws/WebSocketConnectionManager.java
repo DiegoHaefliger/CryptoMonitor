@@ -69,22 +69,26 @@ public class WebSocketConnectionManager {
     }
 
     private void onConnectionLost() {
-        if (reconnectAttempts >= maxReconnectAttempts) {
-            log.error("Limite máximo de tentativas de reconexão do WebSocket atingido.");
-            return;
-        }
-        int delay = baseReconnectDelaySeconds * (reconnectAttempts + 1);
-        log.warn("WebSocket desconectado. Tentando reconectar em {} segundos (tentativa {}/{})...", delay, reconnectAttempts + 1, maxReconnectAttempts);
-        reconnectExecutor.schedule(() -> {
-            try {
-                connect();
-                log.info("Reconexão WebSocket realizada com sucesso.");
-            } catch (Exception e) {
-                log.error("Falha ao tentar reconectar WebSocket", e);
-                reconnectAttempts++;
-                onConnectionLost();
+        Runnable retryTask = new Runnable() {
+            @Override
+            public void run() {
+                if (reconnectAttempts >= maxReconnectAttempts) {
+                    log.error("Limite máximo de tentativas de reconexão do WebSocket atingido.");
+                    return;
+                }
+                int delay = baseReconnectDelaySeconds * (reconnectAttempts + 1);
+                log.warn("WebSocket desconectado. Tentando reconectar em {} segundos (tentativa {}/{})...", delay, reconnectAttempts + 1, maxReconnectAttempts);
+                try {
+                    connect();
+                    log.info("Reconexão WebSocket realizada com sucesso.");
+                } catch (Exception e) {
+                    log.error("Falha ao tentar reconectar WebSocket", e);
+                    reconnectAttempts++;
+                    reconnectExecutor.schedule(this, delay, TimeUnit.SECONDS);
+                }
             }
-        }, delay, TimeUnit.SECONDS);
+        };
+        reconnectExecutor.schedule(retryTask, baseReconnectDelaySeconds, TimeUnit.SECONDS);
     }
 
 }
