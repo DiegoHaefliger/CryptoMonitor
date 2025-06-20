@@ -2,8 +2,13 @@ package com.haefliger.cryptomonitor.ws;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
+
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class WebSocketConnectionManager {
@@ -11,6 +16,14 @@ public class WebSocketConnectionManager {
     private WebSocketClient client;
     private final PriceHandler handler;
     private Map<String, List<String>> symbolIntervals;
+    private final ScheduledExecutorService reconnectExecutor = Executors.newSingleThreadScheduledExecutor();
+    private int reconnectAttempts = 0;
+
+    @Value("${websocket.max-reconnect-attempts:10}")
+    private int maxReconnectAttempts;
+
+    @Value("${websocket.base-reconnect-delay-seconds:5}")
+    private int baseReconnectDelaySeconds;
 
     public WebSocketConnectionManager(Map<String, List<String>> symbolIntervals, PriceHandler handler) {
         this.symbolIntervals = symbolIntervals;
@@ -23,8 +36,10 @@ public class WebSocketConnectionManager {
             return;
         }
         client = new WebSocketClient(symbolIntervals, handler);
+        client.setConnectionListener(this::onConnectionLost);
         client.connect();
         log.info("Conexão WebSocket iniciada.");
+        reconnectAttempts = 0;
     }
 
     public synchronized void disconnect() {
@@ -51,6 +66,25 @@ public class WebSocketConnectionManager {
             this.symbolIntervals = newSymbolIntervals;
             connect();
         }
+    }
+
+    private void onConnectionLost() {
+        if (reconnectAttempts >= maxReconnectAttempts) {
+            log.error("Limite máximo de tentativas de reconexão do WebSocket atingido.");
+            return;
+        }
+        int delay = baseReconnectDelaySeconds * (reconnectAttempts + 1);
+        log.warn("WebSocket desconectado. Tentando reconectar em {} segundos (tentativa {}/{})...", delay, reconnectAttempts + 1, maxReconnectAttempts);
+        reconnectExecutor.schedule(() -> {
+            try {
+                connect();
+                log.info("Reconexão WebSocket realizada com sucesso.");
+            } catch (Exception e) {
+                log.error("Falha ao tentar reconectar WebSocket", e);
+                reconnectAttempts++;
+                onConnectionLost();
+            }
+        }, delay, TimeUnit.SECONDS);
     }
 
 }

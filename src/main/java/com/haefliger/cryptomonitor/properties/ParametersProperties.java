@@ -19,4 +19,7 @@ public class ParametersProperties {
     @Value("${kafka.bootstrap-servers}")
     private String kafkaBootstrapServers;
 
+    @Value("${spring.redis.keys.estrategias.ativas}")
+    private String redisEstrategiasAtivasKey;
+
 }

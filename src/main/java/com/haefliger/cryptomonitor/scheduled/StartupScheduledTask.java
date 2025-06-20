@@ -1,4 +1,4 @@
-package com.haefliger.cryptomonitor.config;
+package com.haefliger.cryptomonitor.scheduled;
 
 import com.haefliger.cryptomonitor.service.implement.EstrategiaAsyncService;
 import lombok.AllArgsConstructor;

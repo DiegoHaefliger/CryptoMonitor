@@ -9,7 +9,7 @@ import com.haefliger.cryptomonitor.mapper.EstrategiaMapper;
 import com.haefliger.cryptomonitor.repository.EstrategiaRepository;
 import com.haefliger.cryptomonitor.service.EstrategiaService;
 import com.haefliger.cryptomonitor.service.KafkaService;
-import com.haefliger.cryptomonitor.ws.WebSocketService;
+import com.haefliger.cryptomonitor.service.RedisService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.service.spi.ServiceException;
@@ -29,7 +29,7 @@ public class EstrategiaServiceImpl implements EstrategiaService {
     private final EstrategiaRepository repository;
     private final EstrategiaMapper mapper;
     private final KafkaService kafkaService;
-    private final WebSocketService webSocketService;
+    private final RedisService redisService;
     private final EstrategiaAsyncService estrategiaAsyncService;
 
     @Override
@@ -110,6 +110,7 @@ public class EstrategiaServiceImpl implements EstrategiaService {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
+                redisService.excluirEstrategiasAtivasRedis();
                 estrategiaAsyncService.atualizaEstrategiasWS();
             }
         });
