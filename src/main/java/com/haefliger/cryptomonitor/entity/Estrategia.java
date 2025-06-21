@@ -1,5 +1,6 @@
 package com.haefliger.cryptomonitor.entity;
 
+import com.haefliger.cryptomonitor.enums.OperadorLogicoEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,8 +34,9 @@ public class Estrategia {
     @Column(nullable = false, length = 10)
     private String intervalo;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "operador_logico", nullable = false, length = 10)
-    private String operadorLogico;
+    private OperadorLogicoEnum operadorLogico;
 
     @Column(name = "date_created", nullable = false)
     private LocalDateTime dateCreated;

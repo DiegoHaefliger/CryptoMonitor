@@ -1,6 +1,7 @@
 package com.haefliger.cryptomonitor.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -26,8 +27,9 @@ public class CondicaoEstrategia {
     @JsonIgnore
     private Estrategia estrategia;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "tipo_indicador", nullable = false, length = 20)
-    private String tipoIndicador;
+    private TipoIndicadorEnum tipoIndicador;
 
     @Column(nullable = false, length = 5)
     private String operador;
