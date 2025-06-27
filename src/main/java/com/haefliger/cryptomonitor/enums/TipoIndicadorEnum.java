@@ -3,7 +3,8 @@ package com.haefliger.cryptomonitor.enums;
 public enum TipoIndicadorEnum {
 
     PRECO,
-    RSI;
+    RSI,
+    MEDIA_MOVEL;
 
     public static boolean isValid(String value) {
         for (TipoIndicadorEnum tipo : values()) {

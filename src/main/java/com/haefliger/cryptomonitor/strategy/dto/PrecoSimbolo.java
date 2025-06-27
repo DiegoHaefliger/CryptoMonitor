@@ -1,4 +1,4 @@
-package com.haefliger.cryptomonitor.ws;
+package com.haefliger.cryptomonitor.strategy.dto;
 
 
 import lombok.Builder;
@@ -8,12 +8,12 @@ import java.time.Instant;
 
 /**
  * Author diego-haefliger
- * Date 6/14/25
+ * Date 25/06/25
  */
 
 @Data
 @Builder
-public class PricePoint {
+public class PrecoSimbolo {
     private final double price;
     private final Instant timestamp;
 }

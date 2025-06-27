@@ -21,7 +21,7 @@ import java.util.Map;
 @Slf4j
 public class WebSocketServiceImpl implements WebSocketService {
 
-    private static final MultiSymbolPriceHandler handler = new MultiSymbolPriceHandler();
+    private final MultiSymbolPriceHandler handler;
     private static WebSocketConnectionManager wsManager = null;
     private final EstrategiaWebSocketMapper estrategiaWebSocketMapper;
     private final RedisService redisService;
