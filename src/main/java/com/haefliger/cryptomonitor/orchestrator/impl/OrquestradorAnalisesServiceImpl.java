@@ -28,7 +28,7 @@ public class OrquestradorAnalisesServiceImpl implements OrquestradorAnalisesServ
         for (String simbolo : simbolosMonitorados.keySet()) {
             SimboloMonitorado monitorado = simbolosMonitorados.get(simbolo);
             List<PrecoSimbolo> historico = historicoPrecosPorSimbolo.get(simbolo);
-            if(historico != null) {
+            if (historico != null) {
                 for (AnaliseEstrategia estrategia : monitorado.getEstrategias()) {
                     estrategia.analisar(historico, simbolo);
                 }
@@ -37,8 +37,6 @@ public class OrquestradorAnalisesServiceImpl implements OrquestradorAnalisesServ
     }
 
     public void analisarMonitorados(List<PrecoSimbolo> historicoPrecos, List<SimboloMonitorado> simbolosMonitorados) {
-        // TODO: verificar se está enviando o histórico de preços correto para cada estratégia
-
         for (SimboloMonitorado monitorado : simbolosMonitorados) {
             if (historicoPrecos != null) {
                 for (AnaliseEstrategia estrategia : monitorado.getEstrategias()) {

@@ -1,6 +1,7 @@
 package com.haefliger.cryptomonitor.strategy;
 
 
+import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
 import com.haefliger.cryptomonitor.strategy.dto.PrecoSimbolo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,6 @@ public class EstrategiaMediaMovel implements AnaliseEstrategia {
 
     @Override
     public String getNome() {
-        return "Média Móvel";
+        return TipoIndicadorEnum.MEDIA_MOVEL.name();
     }
 }

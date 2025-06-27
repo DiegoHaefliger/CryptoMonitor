@@ -24,7 +24,6 @@ public interface EstrategiaWebSocketMapper {
                         Map.Entry::getKey,
                         entry -> {
                             Set<String> intervals = new HashSet<>(entry.getValue());
-                            intervals.add("1");
                             List<String> intervalList = new ArrayList<>(intervals);
                             Collections.sort(intervalList);
                             return intervalList;

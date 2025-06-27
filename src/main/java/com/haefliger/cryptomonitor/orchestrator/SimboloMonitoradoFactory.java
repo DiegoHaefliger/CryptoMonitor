@@ -28,6 +28,7 @@ public class SimboloMonitoradoFactory {
 
     private final AnaliseEstrategia rsi;
     private final AnaliseEstrategia mm;
+    private final AnaliseEstrategia preco;
     private final RedisService redisService;
 
     @Autowired
@@ -35,10 +36,16 @@ public class SimboloMonitoradoFactory {
 
     public SimboloMonitoradoFactory(@Qualifier("estrategiaRSI") AnaliseEstrategia rsi,
                                     @Qualifier("estrategiaMediaMovel") AnaliseEstrategia mm,
+                                    @Qualifier("estrategiaPreco") AnaliseEstrategia preco,
                                     RedisService redisService) {
         this.rsi = rsi;
         this.mm = mm;
+        this.preco = preco;
         this.redisService = redisService;
+    }
+
+    private List<AnaliseEstrategia> criarEstrategiasDisponiveis() {
+        return List.of(rsi, mm, preco);
     }
 
     public List<SimboloMonitorado> criarSimbolosMonitorados(@NonNull List<PrecoSimbolo> historicoPrecos,
@@ -64,10 +71,6 @@ public class SimboloMonitoradoFactory {
         return List.of(simboloMonitorado);
     }
 
-    private List<AnaliseEstrategia> criarEstrategiasDisponiveis() {
-        return List.of(rsi, mm);
-    }
-
     private Map<String, Set<String>> buscarEstrategiasPorSimbolo(String simboloIntervalo) {
         String simbolo = simboloIntervalo.split("-")[0];
         String intervalo = simboloIntervalo.split("-")[1];
@@ -77,8 +80,7 @@ public class SimboloMonitoradoFactory {
             return Map.of();
         }
 
-        // A chave do map deve ser o simboloIntervalo
-       return estrategias.stream()
+        return estrategias.stream()
                 .filter(estrategia -> estrategia.getSimbolo().equals(simbolo) && estrategia.getIntervalo().equals(intervalo))
                 .collect(Collectors.toMap(
                         e -> simboloIntervalo,

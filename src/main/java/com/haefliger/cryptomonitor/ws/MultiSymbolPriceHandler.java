@@ -39,8 +39,7 @@ public class MultiSymbolPriceHandler implements PriceHandler {
 
         if (prices.size() > LIMIT_RECORDS) {
             prices.remove(prices.size() - 1);
-            String simboloIntervalo = getKey(symbol, interval);
-            simboloMonitoradoFactory.criarSimbolosMonitorados(convertToPrecoSimbolos(prices), simboloIntervalo);
+            sendToOrchestrator(symbol, interval, prices);
         }
 
         if (prices.size() == LIMIT_RECORDS) {
@@ -57,8 +56,6 @@ public class MultiSymbolPriceHandler implements PriceHandler {
         existingPrices.sort(Comparator.comparing(PricePoint::getTimestamp).reversed());
 
         if (existingPrices.size() >= LIMIT_RECORDS) {
-            String simboloIntervalo = getKey(symbol, interval);
-            simboloMonitoradoFactory.criarSimbolosMonitorados(convertToPrecoSimbolos(prices), simboloIntervalo);
             log.info("Preços adicionados para {} [{}]: {} em {}", symbol, interval, existingPrices.get(0).getPrice(), existingPrices.get(0).getTimestamp());
         }
     }
@@ -86,5 +83,10 @@ public class MultiSymbolPriceHandler implements PriceHandler {
         return prices.stream()
                 .map(mapper::wsToMonitor)
                 .toList();
+    }
+
+    private void sendToOrchestrator(String symbol, String interval, List<PricePoint> prices) {
+        String simboloIntervalo = getKey(symbol, interval);
+        simboloMonitoradoFactory.criarSimbolosMonitorados(convertToPrecoSimbolos(prices), simboloIntervalo);
     }
 }

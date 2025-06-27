@@ -10,22 +10,21 @@ import java.util.List;
 
 /**
  * Author diego-haefliger
- * Date 25/06/25
+ * Date 27/06/25
  */
 
 @Component
 @Slf4j
-public class EstrategiaRSI implements AnaliseEstrategia {
+public class EstrategiaPreco implements AnaliseEstrategia {
 
     @Override
     public void analisar(List<PrecoSimbolo> historicoPreco, String simbolo) {
-        // TODO: Implementação do cálculo do RSI
-        log.info("Analisando {} com estratégia de RSI", simbolo);
+        // TODO: Implementação estratégia de preço
+        log.info("Analisando {} com estratégia de Preco", simbolo);
     }
 
     @Override
     public String getNome() {
-        return TipoIndicadorEnum.RSI.name();
+        return TipoIndicadorEnum.PRECO.name();
     }
-
 }
