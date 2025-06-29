@@ -21,6 +21,15 @@ public class EstrategiaPreco implements AnaliseEstrategia {
 
     @Override
     public void analisar(List<PrecoSimbolo> historicoPreco, String simbolo, List<Estrategia> estrategias) {
+        if (historicoPreco == null || historicoPreco.size() < 2) {
+            log.warn("Histórico de preço insuficiente para análise. Simbolo: {}", simbolo);
+            return;
+        }
+        if (estrategias == null || estrategias.isEmpty()) {
+            log.warn("Nenhuma estratégia definida para o símbolo: {}", simbolo);
+            return;
+        }
+
         BigDecimal precoAtual = historicoPreco.get(historicoPreco.size() - 1).getPrice();
         BigDecimal precoAnterior = historicoPreco.get(historicoPreco.size() - 2).getPrice();
 

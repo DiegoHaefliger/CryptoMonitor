@@ -36,7 +36,7 @@ public class CondicaoEstrategia {
     @Column(nullable = false, length = 5)
     private String operador;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, precision = 20, scale = 8)
     private BigDecimal valor;
 
     @Column(name = "date_created", nullable = false)
