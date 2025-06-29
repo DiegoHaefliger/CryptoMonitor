@@ -8,6 +8,7 @@ import org.java_websocket.handshake.ServerHandshake;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
@@ -75,7 +76,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
             List<PricePoint> pricePoints = new java.util.ArrayList<>();
             for (JsonElement el : data) {
                 JsonArray kline = el.getAsJsonArray();
-                double close = kline.get(4).getAsDouble(); // Preço de fechamento
+                BigDecimal close = kline.get(4).getAsBigDecimal(); // Preço de fechamento
                 long timestamp = kline.get(0).getAsLong(); // Timestamp em milissegundos
                 pricePoints.add(new PricePoint(close, Instant.ofEpochMilli(timestamp)));
             }
@@ -115,7 +116,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
     private void handleKlineData(String symbol, String interval, JsonObject data) {
         // Verifica se fechou o timestamp
         if (data.has("confirm") && data.get("confirm").getAsBoolean()) {
-            double close = data.get("close").getAsDouble();
+            BigDecimal close = data.get("close").getAsBigDecimal();
             long timestamp = data.get("timestamp").getAsLong();
             handler.addPrice(symbol, interval, close, Instant.ofEpochMilli(timestamp));
         }

@@ -4,6 +4,7 @@ package com.haefliger.cryptomonitor.strategy.dto;
 import lombok.Builder;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 /**
@@ -14,6 +15,6 @@ import java.time.Instant;
 @Data
 @Builder
 public class PrecoSimbolo {
-    private final double price;
+    private final BigDecimal price;
     private final Instant timestamp;
 }

@@ -1,11 +1,13 @@
 package com.haefliger.cryptomonitor.strategy;
 
 
+import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
 import com.haefliger.cryptomonitor.strategy.dto.PrecoSimbolo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -18,8 +20,27 @@ import java.util.List;
 public class EstrategiaPreco implements AnaliseEstrategia {
 
     @Override
-    public void analisar(List<PrecoSimbolo> historicoPreco, String simbolo) {
-        // TODO: Implementação estratégia de preço
+    public void analisar(List<PrecoSimbolo> historicoPreco, String simbolo, List<Estrategia> estrategias) {
+        if (historicoPreco == null || historicoPreco.size() < 2) {
+            log.warn("Histórico de preço insuficiente para análise. Simbolo: {}", simbolo);
+            return;
+        }
+        if (estrategias == null || estrategias.isEmpty()) {
+            log.warn("Nenhuma estratégia definida para o símbolo: {}", simbolo);
+            return;
+        }
+
+        BigDecimal precoAtual = historicoPreco.get(historicoPreco.size() - 1).getPrice();
+        BigDecimal precoAnterior = historicoPreco.get(historicoPreco.size() - 2).getPrice();
+
+        for (Estrategia estrategia : estrategias) {
+            BigDecimal precoAlvo = estrategia.getCondicoes().get(0).getValor();
+            boolean isPrecoSubiu = ((precoAtual.compareTo(precoAlvo) > 0) && (precoAnterior.compareTo(precoAlvo) < 0));
+            boolean isPrecoDesceu = ((precoAtual.compareTo(precoAlvo) < 0) && (precoAnterior.compareTo(precoAlvo) > 0));
+            if (isPrecoSubiu || isPrecoDesceu) {
+                log.info("Alarme acionado para o símbolo: {} com preço de alarme: {}", simbolo, precoAlvo);
+            }
+        }
         log.info("Analisando {} com estratégia de Preco", simbolo);
     }
 

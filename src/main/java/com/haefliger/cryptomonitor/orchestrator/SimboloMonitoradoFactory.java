@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,35 +54,28 @@ public class SimboloMonitoradoFactory {
 
         // monta a lista de estratégias disponíveis
         List<AnaliseEstrategia> estrategiasDisponiveis = criarEstrategiasDisponiveis();
-        Map<String, Set<String>> estrategiasPorSimbolo = buscarEstrategiasPorSimbolo(simboloIntervalo);
-
+        List<Estrategia> estrategias = buscarEstrategiasAtivasRedis(simboloIntervalo);
+        Map<String, Set<String>> estrategiasPorSimbolo = buscarEstrategiasPorSimbolo(simboloIntervalo, estrategias);
         Set<String> estrategiasParaSimbolo = estrategiasPorSimbolo.getOrDefault(simboloIntervalo, Set.of());
+
         List<AnaliseEstrategia> estrategiasFiltradas = estrategiasDisponiveis.stream()
                 .filter(e -> estrategiasParaSimbolo.contains(e.getNome()))
                 .toList();
+
         SimboloMonitorado simboloMonitorado = SimboloMonitorado.builder()
                 .simbolo(simboloIntervalo)
                 .estrategias(estrategiasFiltradas)
                 .build();
 
         if (!simboloMonitorado.getEstrategias().isEmpty()) {
-            orquestradorAnalisesService.analisarMonitorados(historicoPrecos, List.of(simboloMonitorado));
+            orquestradorAnalisesService.analisarMonitorados(historicoPrecos, List.of(simboloMonitorado), estrategias);
         }
 
         return List.of(simboloMonitorado);
     }
 
-    private Map<String, Set<String>> buscarEstrategiasPorSimbolo(String simboloIntervalo) {
-        String simbolo = simboloIntervalo.split("-")[0];
-        String intervalo = simboloIntervalo.split("-")[1];
-        List<Estrategia> estrategias = redisService.buscarEstrategiasAtivasRedis();
-        if (estrategias == null || estrategias.isEmpty()) {
-            log.warn("Nenhuma estratégia ativa encontrada no Redis ou no banco de dados.");
-            return Map.of();
-        }
-
+    private Map<String, Set<String>> buscarEstrategiasPorSimbolo(String simboloIntervalo, List<Estrategia> estrategias) {
         return estrategias.stream()
-                .filter(estrategia -> estrategia.getSimbolo().equals(simbolo) && estrategia.getIntervalo().equals(intervalo))
                 .collect(Collectors.toMap(
                         e -> simboloIntervalo,
                         estrategia -> estrategia.getCondicoes().stream()
@@ -94,4 +88,18 @@ public class SimboloMonitoradoFactory {
                 ));
     }
 
+    private List<Estrategia> buscarEstrategiasAtivasRedis(String simboloIntervalo) {
+        String simbolo = simboloIntervalo.split("-")[0];
+        String intervalo = simboloIntervalo.split("-")[1];
+        List<Estrategia> estrategias = redisService.buscarEstrategiasAtivasRedis();
+
+        if (estrategias == null || estrategias.isEmpty()) {
+            log.warn("Nenhuma estratégia ativa encontrada no Redis ou no banco de dados.");
+            return Collections.emptyList();
+        }
+
+        return estrategias.stream()
+                .filter(estrategia -> estrategia.getSimbolo().equals(simbolo) && estrategia.getIntervalo().equals(intervalo))
+                .toList();
+    }
 }

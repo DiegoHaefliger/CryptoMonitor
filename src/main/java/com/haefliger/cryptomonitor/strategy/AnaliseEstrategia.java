@@ -1,6 +1,7 @@
 package com.haefliger.cryptomonitor.strategy;
 
 
+import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.strategy.dto.PrecoSimbolo;
 
 import java.util.List;
@@ -11,7 +12,7 @@ import java.util.List;
  */
 public interface AnaliseEstrategia {
 
-    void analisar(List<PrecoSimbolo> historicoPreco, String simbolo);
+    void analisar(List<PrecoSimbolo> historicoPreco, String simbolo, List<Estrategia> estrategias);
     String getNome();
 
 }
