@@ -1,0 +1,10 @@
+{
+  "PRECO": "💰 Estratégia de Preço acionada com sucesso para o ativo %s valor $%s",
+  "RSI": "🏆 Estratégia de RSI acionada com sucesso para o ativo %s! valor $%s indicador %s",
+  "MEDIA_MOVEL": "📉 Estratégia de Médias Móveis acionada com sucesso para o ativo %s! valor $%s indicador %s",
+  "MACD": "📈 Estratégia de MACD acionada com sucesso para o ativo %s! valor $%s indicador %s",
+  "BOLLINGER": "📊 Estratégia de Bollinger Bands acionada com sucesso para o ativo %s! valor $%s indicador %s",
+  "STOP_LOSS": "🚨 Estratégia de Stop Loss acionada com sucesso para o ativo %s valor $%s",
+  "STOP_GAIN": "🚀 Estratégia de Stop Gain acionada com sucesso para o ativo %s valor $%s",
+  "STOP_LOSS_ATUALIZADO": "🔄 Stop Loss atualizado para o ativo %s valor $%s"
+}

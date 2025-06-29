@@ -15,9 +15,7 @@ import java.util.Arrays;
 @AllArgsConstructor
 public enum KafkaEnum {
 
-    ESTRATEGIA_INSERT("strategy-updated"),
-    ESTRATEGIA_UPDATED("strategy-updated"),
-    ESTRATEGIA_DELETED("strategy-deleted");
+    ESTRATEGIA("strategy");
 
     private final String topic;
 
