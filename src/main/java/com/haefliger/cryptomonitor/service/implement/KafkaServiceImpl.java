@@ -46,6 +46,10 @@ public class KafkaServiceImpl implements KafkaService {
     @Override
     public void sendMessageEstrategias(TipoIndicadorEnum indicador, String[] parametros) {
         try (InputStream is = getClass().getClassLoader().getResourceAsStream(MENSAGENS_JSON)) {
+            if (is == null) {
+                log.error("Resource '{}' not found in the classpath.", MENSAGENS_JSON);
+                return;
+            }
             JsonNode mensagens = objectMapper.readTree(is);
             String mensagemEstrategia = String.format(mensagens.path(indicador.name()).asText(), (Object[]) parametros);
 
