@@ -1,6 +1,7 @@
 package com.haefliger.cryptomonitor.strategy;
 
 
+import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
 import com.haefliger.cryptomonitor.strategy.dto.PrecoSimbolo;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +19,7 @@ import java.util.List;
 public class EstrategiaRSI implements AnaliseEstrategia {
 
     @Override
-    public void analisar(List<PrecoSimbolo> historicoPreco, String simbolo) {
+    public void analisar(List<PrecoSimbolo> historicoPreco, String simbolo, List<Estrategia> estrategias) {
         // TODO: Implementação do cálculo do RSI
         log.info("Analisando {} com estratégia de RSI", simbolo);
     }

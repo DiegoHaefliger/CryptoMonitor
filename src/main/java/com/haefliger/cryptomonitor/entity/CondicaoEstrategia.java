@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.proxy.HibernateProxy;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -35,8 +36,8 @@ public class CondicaoEstrategia {
     @Column(nullable = false, length = 5)
     private String operador;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String valor;
+    @Column(nullable = false, length = 20)
+    private BigDecimal valor;
 
     @Column(name = "date_created", nullable = false)
     private LocalDateTime dateCreated;

@@ -1,6 +1,7 @@
 package com.haefliger.cryptomonitor.ws;
 
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -11,7 +12,7 @@ import java.util.List;
 
 public interface PriceHandler {
 
-    void addPrice(String symbol, String interval, double price, Instant timestamp);
+    void addPrice(String symbol, String interval, BigDecimal price, Instant timestamp);
 
     void addPricesHistorical(String symbol, String interval, List<PricePoint> prices);
 

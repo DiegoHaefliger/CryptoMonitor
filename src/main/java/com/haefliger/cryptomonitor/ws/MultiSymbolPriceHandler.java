@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 
@@ -29,7 +30,7 @@ public class MultiSymbolPriceHandler implements PriceHandler {
     private final PrecoSimboloMapper mapper;
 
     @Override
-    public synchronized void addPrice(String symbol, String interval, double price, Instant timestamp) {
+    public synchronized void addPrice(String symbol, String interval, BigDecimal price, Instant timestamp) {
         List<PricePoint> prices = priceMap
                 .computeIfAbsent(symbol, k -> new HashMap<>())
                 .computeIfAbsent(interval, k -> new ArrayList<>());
