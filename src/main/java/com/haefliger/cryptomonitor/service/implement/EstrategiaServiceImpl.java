@@ -8,7 +8,6 @@ import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.mapper.EstrategiaMapper;
 import com.haefliger.cryptomonitor.repository.EstrategiaRepository;
 import com.haefliger.cryptomonitor.service.EstrategiaService;
-import com.haefliger.cryptomonitor.service.KafkaService;
 import com.haefliger.cryptomonitor.service.RedisService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +27,6 @@ public class EstrategiaServiceImpl implements EstrategiaService {
 
     private final EstrategiaRepository repository;
     private final EstrategiaMapper mapper;
-    private final KafkaService kafkaService;
     private final RedisService redisService;
     private final EstrategiaAsyncService estrategiaAsyncService;
 
@@ -39,10 +37,8 @@ public class EstrategiaServiceImpl implements EstrategiaService {
             log.info("Salvando estratégia: {}", estrategiaRequest.getNome());
             final Estrategia estrategia = toEstrategiaEntity(estrategiaRequest);
             final Estrategia savedEstrategia = repository.save(estrategia);
-//            kafkaService.sendMessage(ESTRATEGIA_INSERT.getTopic(), estrategia.getId().toString(), estrategia);
 
             atualizarWebSocket();
-
             return mapper.longToSalvarEstrategiaResponse(savedEstrategia.getId());
         } catch (Exception e) {
             log.error("Erro ao salvar estratégia: {}", estrategiaRequest.getNome(), e);

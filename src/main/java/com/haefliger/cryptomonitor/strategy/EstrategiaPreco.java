@@ -3,8 +3,10 @@ package com.haefliger.cryptomonitor.strategy;
 
 import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
+import com.haefliger.cryptomonitor.service.KafkaService;
 import com.haefliger.cryptomonitor.strategy.dto.PrecoSimbolo;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -19,14 +21,17 @@ import java.util.List;
 @Slf4j
 public class EstrategiaPreco implements AnaliseEstrategia {
 
+    @Autowired
+    private KafkaService kafkaService;
+
     @Override
-    public void analisar(List<PrecoSimbolo> historicoPreco, String simbolo, List<Estrategia> estrategias) {
+    public void analisar(List<PrecoSimbolo> historicoPreco, String simboloIntervalo, List<Estrategia> estrategias) {
         if (historicoPreco == null || historicoPreco.size() < 2) {
-            log.warn("Histórico de preço insuficiente para análise. Simbolo: {}", simbolo);
+            log.warn("Histórico de preço insuficiente para análise. Simbolo: {}", simboloIntervalo);
             return;
         }
         if (estrategias == null || estrategias.isEmpty()) {
-            log.warn("Nenhuma estratégia definida para o símbolo: {}", simbolo);
+            log.warn("Nenhuma estratégia definida para o símbolo: {}", simboloIntervalo);
             return;
         }
 
@@ -37,15 +42,30 @@ public class EstrategiaPreco implements AnaliseEstrategia {
             BigDecimal precoAlvo = estrategia.getCondicoes().get(0).getValor();
             boolean isPrecoSubiu = ((precoAtual.compareTo(precoAlvo) > 0) && (precoAnterior.compareTo(precoAlvo) < 0));
             boolean isPrecoDesceu = ((precoAtual.compareTo(precoAlvo) < 0) && (precoAnterior.compareTo(precoAlvo) > 0));
+
+            sendMessage(TipoIndicadorEnum.PRECO, simboloIntervalo, precoAtual);
+
             if (isPrecoSubiu || isPrecoDesceu) {
-                log.info("Alarme acionado para o símbolo: {} com preço de alarme: {}", simbolo, precoAlvo);
+                log.info("Alarme acionado para o símbolo: {} com preço de alarme: {}", simboloIntervalo, precoAlvo);
             }
         }
-        log.info("Analisando {} com estratégia de Preco", simbolo);
+        log.info("Analisando {} com estratégia de Preco", simboloIntervalo);
     }
 
     @Override
     public String getNome() {
         return TipoIndicadorEnum.PRECO.name();
     }
+
+    private void sendMessage(TipoIndicadorEnum indicador, String simboloIntervalo, BigDecimal precoAtual) {
+        try {
+            String simbolo = simboloIntervalo.split("-")[0];
+            String[] parametros = new String[]{simbolo, String.valueOf(precoAtual)};
+
+            kafkaService.sendMessageEstrategias(indicador, parametros);
+        } catch (Exception e) {
+            log.error("Erro ao enviar mensagem para o Kafka: {}", e.getMessage());
+        }
+    }
+
 }
