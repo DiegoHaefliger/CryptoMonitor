@@ -1,10 +1,14 @@
 package com.haefliger.cryptomonitor.ws;
 
 import com.google.gson.*;
+import com.haefliger.cryptomonitor.ws.domain.PricePointDomain;
+import com.haefliger.cryptomonitor.ws.service.MultiSymboPriceHandler;
+import com.haefliger.cryptomonitor.ws.service.impl.MultiSymboPriceHandlerService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.handshake.ServerHandshake;
+import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -28,11 +32,12 @@ import static com.haefliger.cryptomonitor.utils.Constants.*;
 @Slf4j
 @Getter
 @Setter
+@Component
 public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
 
     private ConnectionListener connectionListener;
     private Map<String, List<String>> symbolIntervals;
-    private final PriceHandler handler;
+    private final MultiSymboPriceHandler handler;
     private final Gson gson = new Gson();
 
     public static final String TOPIC = "topic";
@@ -42,7 +47,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
     public static final String UNSUBSCRIBE = "unsubscribe";
     public static final String ARGS = "args";
 
-    public WebSocketClient(Map<String, List<String>> symbolIntervals, PriceHandler handler) throws Exception {
+    public WebSocketClient(Map<String, List<String>> symbolIntervals, MultiSymboPriceHandler handler) throws Exception {
         super(new URI(WEBSOCKET_URL_LINEAR));
         this.symbolIntervals = Collections.unmodifiableMap(symbolIntervals);
         this.handler = handler;
@@ -52,7 +57,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
     private void loadHistoricalData() {
 
         // por segurança, limpa os dados antigos antes de carregar novos
-        if (handler instanceof MultiSymbolPriceHandler multiHandler) {
+        if (handler instanceof MultiSymboPriceHandlerService multiHandler) {
             multiHandler.clearAll();
         }
 
@@ -73,14 +78,14 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
             String json = reader.lines().collect(Collectors.joining());
             JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
             JsonArray data = obj.getAsJsonObject("result").getAsJsonArray("list");
-            List<PricePoint> pricePoints = new java.util.ArrayList<>();
+            List<PricePointDomain> pricePointDomains = new java.util.ArrayList<>();
             for (JsonElement el : data) {
                 JsonArray kline = el.getAsJsonArray();
                 BigDecimal close = kline.get(4).getAsBigDecimal(); // Preço de fechamento
                 long timestamp = kline.get(0).getAsLong(); // Timestamp em milissegundos
-                pricePoints.add(new PricePoint(close, Instant.ofEpochMilli(timestamp)));
+                pricePointDomains.add(new PricePointDomain(close, Instant.ofEpochMilli(timestamp)));
             }
-            handler.addPricesHistorical(symbol, interval, pricePoints);
+            handler.addPricesHistorical(symbol, interval, pricePointDomains);
         }
     }
 

@@ -1,9 +1,11 @@
-package com.haefliger.cryptomonitor.ws;
+package com.haefliger.cryptomonitor.ws.service.impl;
 
 
 import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.mapper.EstrategiaWebSocketMapper;
 import com.haefliger.cryptomonitor.service.RedisService;
+import com.haefliger.cryptomonitor.ws.WebSocketConnectionManager;
+import com.haefliger.cryptomonitor.ws.service.WebSocketService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,7 +23,7 @@ import java.util.Map;
 @Slf4j
 public class WebSocketServiceImpl implements WebSocketService {
 
-    private final MultiSymbolPriceHandler handler;
+    private final MultiSymboPriceHandlerService handler;
     private static WebSocketConnectionManager wsManager = null;
     private final EstrategiaWebSocketMapper estrategiaWebSocketMapper;
     private final RedisService redisService;

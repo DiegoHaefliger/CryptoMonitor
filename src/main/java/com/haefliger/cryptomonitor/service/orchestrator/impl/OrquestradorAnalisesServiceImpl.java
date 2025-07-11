@@ -1,8 +1,8 @@
-package com.haefliger.cryptomonitor.orchestrator.impl;
+package com.haefliger.cryptomonitor.service.orchestrator.impl;
 
 
 import com.haefliger.cryptomonitor.entity.Estrategia;
-import com.haefliger.cryptomonitor.orchestrator.OrquestradorAnalisesService;
+import com.haefliger.cryptomonitor.service.orchestrator.OrquestradorAnalisesService;
 import com.haefliger.cryptomonitor.strategy.AnaliseEstrategia;
 import com.haefliger.cryptomonitor.strategy.domain.PrecoSimboloDomain;
 import com.haefliger.cryptomonitor.strategy.domain.SimboloMonitoradoDomain;
