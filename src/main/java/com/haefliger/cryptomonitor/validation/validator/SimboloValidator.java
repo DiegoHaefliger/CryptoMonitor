@@ -1,5 +1,6 @@
-package com.haefliger.cryptomonitor.validation;
+package com.haefliger.cryptomonitor.validation.validator;
 
+import com.haefliger.cryptomonitor.validation.SimboloValido;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 

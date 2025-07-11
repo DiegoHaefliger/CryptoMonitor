@@ -1,6 +1,6 @@
 package com.haefliger.cryptomonitor.service.implement;
 
-import com.haefliger.cryptomonitor.ws.WebSocketService;
+import com.haefliger.cryptomonitor.ws.service.WebSocketService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;

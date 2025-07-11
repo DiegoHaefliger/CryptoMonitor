@@ -1,4 +1,4 @@
-package com.haefliger.cryptomonitor.ws;
+package com.haefliger.cryptomonitor.ws.domain;
 
 
 import lombok.Data;

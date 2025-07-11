@@ -1,4 +1,4 @@
-package com.haefliger.cryptomonitor.strategy.dto;
+package com.haefliger.cryptomonitor.strategy.domain;
 
 
 import lombok.Builder;
@@ -14,7 +14,7 @@ import java.time.Instant;
 
 @Data
 @Builder
-public class PrecoSimbolo {
+public class PrecoSimboloDomain {
     private final BigDecimal price;
     private final Instant timestamp;
 }

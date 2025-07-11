@@ -4,7 +4,7 @@ package com.haefliger.cryptomonitor.strategy;
 import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
 import com.haefliger.cryptomonitor.service.KafkaService;
-import com.haefliger.cryptomonitor.strategy.dto.PrecoSimbolo;
+import com.haefliger.cryptomonitor.strategy.domain.PrecoSimboloDomain;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -25,7 +25,7 @@ public class EstrategiaPreco implements AnaliseEstrategia {
     private KafkaService kafkaService;
 
     @Override
-    public void analisar(List<PrecoSimbolo> historicoPreco, String simboloIntervalo, List<Estrategia> estrategias) {
+    public void analisar(List<PrecoSimboloDomain> historicoPreco, String simboloIntervalo, List<Estrategia> estrategias) {
         if (historicoPreco == null || historicoPreco.size() < 2) {
             log.warn("Histórico de preço insuficiente para análise. Simbolo: {}", simboloIntervalo);
             return;

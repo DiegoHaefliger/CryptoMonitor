@@ -1,14 +1,13 @@
-package com.haefliger.cryptomonitor.orchestrator;
+package com.haefliger.cryptomonitor.service.orchestrator;
 
 
 import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.service.RedisService;
 import com.haefliger.cryptomonitor.strategy.AnaliseEstrategia;
-import com.haefliger.cryptomonitor.strategy.dto.PrecoSimbolo;
-import com.haefliger.cryptomonitor.strategy.dto.SimboloMonitorado;
+import com.haefliger.cryptomonitor.strategy.domain.PrecoSimboloDomain;
+import com.haefliger.cryptomonitor.strategy.domain.SimboloMonitoradoDomain;
 import io.micrometer.common.lang.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -25,32 +24,32 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class SimboloMonitoradoFactory {
+public class SimboloMonitoradoFactoryService {
 
     private final AnaliseEstrategia rsi;
     private final AnaliseEstrategia mm;
     private final AnaliseEstrategia preco;
     private final RedisService redisService;
 
-    @Autowired
-    private OrquestradorAnalisesService orquestradorAnalisesService;
+    private final OrquestradorAnalisesService orquestradorAnalisesService;
 
-    public SimboloMonitoradoFactory(@Qualifier("estrategiaRSI") AnaliseEstrategia rsi,
-                                    @Qualifier("estrategiaMediaMovel") AnaliseEstrategia mm,
-                                    @Qualifier("estrategiaPreco") AnaliseEstrategia preco,
-                                    RedisService redisService) {
+    public SimboloMonitoradoFactoryService(@Qualifier("estrategiaRSI") AnaliseEstrategia rsi,
+                                           @Qualifier("estrategiaMediaMovel") AnaliseEstrategia mm,
+                                           @Qualifier("estrategiaPreco") AnaliseEstrategia preco,
+                                           RedisService redisService, OrquestradorAnalisesService orquestradorAnalisesService) {
         this.rsi = rsi;
         this.mm = mm;
         this.preco = preco;
         this.redisService = redisService;
+        this.orquestradorAnalisesService = orquestradorAnalisesService;
     }
 
     private List<AnaliseEstrategia> criarEstrategiasDisponiveis() {
         return List.of(rsi, mm, preco);
     }
 
-    public List<SimboloMonitorado> criarSimbolosMonitorados(@NonNull List<PrecoSimbolo> historicoPrecos,
-                                                            @NonNull String simboloIntervalo) {
+    public List<SimboloMonitoradoDomain> criarSimbolosMonitorados(@NonNull List<PrecoSimboloDomain> historicoPrecos,
+                                                                  @NonNull String simboloIntervalo) {
 
         // monta a lista de estratégias disponíveis
         List<AnaliseEstrategia> estrategiasDisponiveis = criarEstrategiasDisponiveis();
@@ -62,16 +61,16 @@ public class SimboloMonitoradoFactory {
                 .filter(e -> estrategiasParaSimbolo.contains(e.getNome()))
                 .toList();
 
-        SimboloMonitorado simboloMonitorado = SimboloMonitorado.builder()
+        SimboloMonitoradoDomain simboloMonitoradoDomain = SimboloMonitoradoDomain.builder()
                 .simbolo(simboloIntervalo)
                 .estrategias(estrategiasFiltradas)
                 .build();
 
-        if (!simboloMonitorado.getEstrategias().isEmpty()) {
-            orquestradorAnalisesService.analisarMonitorados(historicoPrecos, List.of(simboloMonitorado), estrategias);
+        if (!simboloMonitoradoDomain.getEstrategias().isEmpty()) {
+            orquestradorAnalisesService.analisarMonitorados(historicoPrecos, List.of(simboloMonitoradoDomain), estrategias);
         }
 
-        return List.of(simboloMonitorado);
+        return List.of(simboloMonitoradoDomain);
     }
 
     private Map<String, Set<String>> buscarEstrategiasPorSimbolo(String simboloIntervalo, List<Estrategia> estrategias) {

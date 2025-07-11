@@ -1,4 +1,4 @@
-package com.haefliger.cryptomonitor.ws;
+package com.haefliger.cryptomonitor.ws.service;
 
 
 import java.util.List;

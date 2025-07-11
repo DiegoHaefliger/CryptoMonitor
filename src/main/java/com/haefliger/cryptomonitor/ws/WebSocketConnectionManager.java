@@ -1,8 +1,10 @@
 package com.haefliger.cryptomonitor.ws;
 
+import com.haefliger.cryptomonitor.ws.service.MultiSymboPriceHandler;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
@@ -11,10 +13,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
+@Component
 public class WebSocketConnectionManager {
     @Getter
     private WebSocketClient client;
-    private final PriceHandler handler;
+    private final MultiSymboPriceHandler handler;
     private Map<String, List<String>> symbolIntervals;
     private final ScheduledExecutorService reconnectExecutor = Executors.newSingleThreadScheduledExecutor();
     private int reconnectAttempts = 0;
@@ -25,7 +28,7 @@ public class WebSocketConnectionManager {
     @Value("${websocket.base-reconnect-delay-seconds:5}")
     private int baseReconnectDelaySeconds;
 
-    public WebSocketConnectionManager(Map<String, List<String>> symbolIntervals, PriceHandler handler) {
+    public WebSocketConnectionManager(Map<String, List<String>> symbolIntervals, MultiSymboPriceHandler handler) {
         this.symbolIntervals = symbolIntervals;
         this.handler = handler;
     }

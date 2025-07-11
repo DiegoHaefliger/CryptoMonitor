@@ -5,7 +5,7 @@ import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.enums.OperadorComparacaoEnum;
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
 import com.haefliger.cryptomonitor.service.KafkaService;
-import com.haefliger.cryptomonitor.strategy.dto.PrecoSimbolo;
+import com.haefliger.cryptomonitor.strategy.domain.PrecoSimboloDomain;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -29,7 +29,7 @@ public class EstrategiaRSI implements AnaliseEstrategia {
     private KafkaService kafkaService;
 
     @Override
-    public void analisar(List<PrecoSimbolo> historicoPreco, String simboloIntervalo, List<Estrategia> estrategias) {
+    public void analisar(List<PrecoSimboloDomain> historicoPreco, String simboloIntervalo, List<Estrategia> estrategias) {
         List<Double> rsiValues = calcularRSI(historicoPreco);
         double rsiAnterior = rsiValues.get(0);
         double rsiAtual = rsiValues.get(1);
@@ -53,7 +53,7 @@ public class EstrategiaRSI implements AnaliseEstrategia {
         log.info("Analisando {} com estratégia de RSI {}", simboloIntervalo, rsiAtual);
     }
 
-    public List<Double> calcularRSI(List<PrecoSimbolo> historicoPreco) {
+    public List<Double> calcularRSI(List<PrecoSimboloDomain> historicoPreco) {
         final int periodo = PERIODO_RSI;
 
         if (historicoPreco == null || historicoPreco.size() < periodo + 1) {
@@ -61,8 +61,8 @@ public class EstrategiaRSI implements AnaliseEstrategia {
             return List.of(0.0, 0.0);
         }
 
-        List<PrecoSimbolo> sortedHistorico = new ArrayList<>(historicoPreco);
-        sortedHistorico.sort(Comparator.comparing(PrecoSimbolo::getTimestamp));
+        List<PrecoSimboloDomain> sortedHistorico = new ArrayList<>(historicoPreco);
+        sortedHistorico.sort(Comparator.comparing(PrecoSimboloDomain::getTimestamp));
 
         double gain = 0.0;
         double loss = 0.0;

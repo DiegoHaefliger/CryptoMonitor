@@ -1,6 +1,8 @@
-package com.haefliger.cryptomonitor.ws;
+package com.haefliger.cryptomonitor.ws.domain;
 
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,7 +16,8 @@ import java.time.Instant;
 
 @Data
 @Builder
-public class PricePoint {
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
+public class PricePointDomain {
     private final BigDecimal price;
     private final Instant timestamp;
 }

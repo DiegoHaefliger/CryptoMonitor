@@ -1,6 +1,7 @@
-package com.haefliger.cryptomonitor.validation;
+package com.haefliger.cryptomonitor.validation.validator;
 
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
+import com.haefliger.cryptomonitor.validation.TipoIndicadorValido;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 

@@ -1,4 +1,4 @@
-package com.haefliger.cryptomonitor.strategy.dto;
+package com.haefliger.cryptomonitor.strategy.domain;
 
 
 import com.haefliger.cryptomonitor.strategy.AnaliseEstrategia;
@@ -13,7 +13,7 @@ import java.util.List;
  */
 @Data
 @Builder
-public class SimboloMonitorado {
+public class SimboloMonitoradoDomain {
     private String simbolo;
     private List<AnaliseEstrategia> estrategias;
 }
