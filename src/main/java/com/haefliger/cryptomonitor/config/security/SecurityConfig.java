@@ -1,4 +1,4 @@
-package com.haefliger.cryptomonitor.security;
+package com.haefliger.cryptomonitor.config.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

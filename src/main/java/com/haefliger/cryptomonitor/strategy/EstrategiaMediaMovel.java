@@ -4,6 +4,7 @@ package com.haefliger.cryptomonitor.strategy;
 import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
 import com.haefliger.cryptomonitor.strategy.domain.PrecoSimboloDomain;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +16,7 @@ import java.util.List;
  */
 
 @Component
+@AllArgsConstructor
 @Slf4j
 public class EstrategiaMediaMovel implements AnaliseEstrategia {
 

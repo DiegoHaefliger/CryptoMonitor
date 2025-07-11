@@ -6,6 +6,7 @@ import com.haefliger.cryptomonitor.enums.OperadorComparacaoEnum;
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
 import com.haefliger.cryptomonitor.service.KafkaService;
 import com.haefliger.cryptomonitor.strategy.domain.PrecoSimboloDomain;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -20,13 +21,13 @@ import java.util.List;
  */
 
 @Component
+@AllArgsConstructor
 @Slf4j
 public class EstrategiaRSI implements AnaliseEstrategia {
 
     private static final Integer PERIODO_RSI = 14;
 
-    @Autowired
-    private KafkaService kafkaService;
+    private final KafkaService kafkaService;
 
     @Override
     public void analisar(List<PrecoSimboloDomain> historicoPreco, String simboloIntervalo, List<Estrategia> estrategias) {

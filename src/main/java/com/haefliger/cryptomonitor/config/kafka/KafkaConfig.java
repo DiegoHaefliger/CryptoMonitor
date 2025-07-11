@@ -2,9 +2,9 @@ package com.haefliger.cryptomonitor.config.kafka;
 
 
 import com.haefliger.cryptomonitor.properties.ParametersProperties;
+import lombok.AllArgsConstructor;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
@@ -20,10 +20,10 @@ import java.util.Map;
  */
 
 @Configuration
+@AllArgsConstructor
 public class KafkaConfig {
 
-    @Autowired
-    private ParametersProperties properties;
+    private final ParametersProperties properties;
 
     @Bean
     public ProducerFactory<String, String> producerFactory() {
