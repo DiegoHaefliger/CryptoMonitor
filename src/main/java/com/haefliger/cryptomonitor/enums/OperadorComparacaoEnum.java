@@ -3,20 +3,27 @@ package com.haefliger.cryptomonitor.enums;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.util.function.BiPredicate;
+
 @Getter
 @AllArgsConstructor
 public enum OperadorComparacaoEnum {
-    MENOR("<"),
-    MAIOR(">"),
-    MENOR_IGUAL("<="),
-    MAIOR_IGUAL(">="),
-    IGUAL("=");
+    MENOR("<", (a, b) -> a < b),
+    MAIOR(">", (a, b) -> a > b),
+    MENOR_IGUAL("<=", (a, b) -> a <= b),
+    MAIOR_IGUAL(">=", (a, b) -> a >= b),
+    IGUAL("=", Double::equals);
 
     private final String simbolo;
+    private final BiPredicate<Double, Double> operador;
 
-    public static boolean isValid(String value) {
+    public boolean comparar(Double valorAlvo, Double valorComparacao) {
+        return operador.test(valorAlvo, valorComparacao);
+    }
+
+    public static boolean isValid(OperadorComparacaoEnum value) {
         for (OperadorComparacaoEnum op : values()) {
-            if (op.getSimbolo().equals(value)) {
+            if (op ==  value) {
                 return true;
             }
         }
@@ -32,4 +39,3 @@ public enum OperadorComparacaoEnum {
         return sb.toString();
     }
 }
-

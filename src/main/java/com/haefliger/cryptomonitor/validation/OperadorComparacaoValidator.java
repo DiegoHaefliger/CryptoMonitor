@@ -4,10 +4,10 @@ import com.haefliger.cryptomonitor.enums.OperadorComparacaoEnum;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
-public class OperadorComparacaoValidator implements ConstraintValidator<OperadorComparacaoValido, String> {
+public class OperadorComparacaoValidator implements ConstraintValidator<OperadorComparacaoValido, OperadorComparacaoEnum> {
     @Override
-    public boolean isValid(String value, ConstraintValidatorContext context) {
-        if (value == null || value.trim().isEmpty() || !OperadorComparacaoEnum.isValid(value)) {
+    public boolean isValid(OperadorComparacaoEnum value, ConstraintValidatorContext context) {
+        if (value == null ||  !OperadorComparacaoEnum.isValid(value)) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate(
                     "Operador inválido. Valores válidos: " + OperadorComparacaoEnum.valoresValidos()

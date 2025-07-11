@@ -1,6 +1,7 @@
 package com.haefliger.cryptomonitor.dto.cache;
 
 
+import com.haefliger.cryptomonitor.enums.OperadorComparacaoEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,7 +22,7 @@ import java.time.LocalDateTime;
 public class CondicaoEstrategiaCacheDTO implements Serializable  {
     private Long id;
     private String tipoIndicador;
-    private String operador;
+    private OperadorComparacaoEnum operador;
     private String valor;
     private LocalDateTime dateCreated;
 }
