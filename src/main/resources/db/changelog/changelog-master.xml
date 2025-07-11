@@ -94,5 +94,10 @@
         </update>
     </changeSet>
 
+    <!-- altera o tamanho do campo operador para VARCHAR(15) na tabela condicoes_estrategia -->
+    <changeSet id="7-alter-column-operador-condicoes-estrategia" author="diego.haefliger">
+        <modifyDataType tableName="condicoes_estrategia" columnName="operador" newDataType="VARCHAR(15)"/>
+    </changeSet>
+
 
 </databaseChangeLog>

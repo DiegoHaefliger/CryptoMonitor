@@ -43,10 +43,9 @@ public class EstrategiaPreco implements AnaliseEstrategia {
             boolean isPrecoSubiu = ((precoAtual.compareTo(precoAlvo) > 0) && (precoAnterior.compareTo(precoAlvo) < 0));
             boolean isPrecoDesceu = ((precoAtual.compareTo(precoAlvo) < 0) && (precoAnterior.compareTo(precoAlvo) > 0));
 
-            sendMessage(TipoIndicadorEnum.PRECO, simboloIntervalo, precoAtual);
-
             if (isPrecoSubiu || isPrecoDesceu) {
-                log.info("Alarme acionado para o símbolo: {} com preço de alarme: {}", simboloIntervalo, precoAlvo);
+                sendMessage(simboloIntervalo, precoAtual);
+                log.info("Alarme acionado para o símbolo: {} com preço alvo: {}", simboloIntervalo, precoAlvo);
             }
         }
         log.info("Analisando {} com estratégia de Preco", simboloIntervalo);
@@ -57,12 +56,12 @@ public class EstrategiaPreco implements AnaliseEstrategia {
         return TipoIndicadorEnum.PRECO.name();
     }
 
-    private void sendMessage(TipoIndicadorEnum indicador, String simboloIntervalo, BigDecimal precoAtual) {
+    private void sendMessage(String simboloIntervalo, BigDecimal precoAtual) {
         try {
             String simbolo = simboloIntervalo.split("-")[0];
             String[] parametros = new String[]{simbolo, String.valueOf(precoAtual)};
 
-            kafkaService.sendMessageEstrategias(indicador, parametros);
+            kafkaService.sendMessageEstrategias(TipoIndicadorEnum.PRECO, parametros);
         } catch (Exception e) {
             log.error("Erro ao enviar mensagem para o Kafka: {}", e.getMessage());
         }

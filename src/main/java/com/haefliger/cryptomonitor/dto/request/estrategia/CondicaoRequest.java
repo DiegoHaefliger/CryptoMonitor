@@ -1,5 +1,6 @@
 package com.haefliger.cryptomonitor.dto.request.estrategia;
 
+import com.haefliger.cryptomonitor.enums.OperadorComparacaoEnum;
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
 import com.haefliger.cryptomonitor.validation.NotEmptyWithFieldMessage;
 import com.haefliger.cryptomonitor.validation.OperadorComparacaoValido;
@@ -15,7 +16,7 @@ public class CondicaoRequest {
 
     @Schema(description = "Operação lógica", example = "<")
     @OperadorComparacaoValido
-    private String operador;
+    private OperadorComparacaoEnum operador;
 
     @Schema(description = "Valor do operador", example = "30")
     @NotEmptyWithFieldMessage(fieldName = "valor")
