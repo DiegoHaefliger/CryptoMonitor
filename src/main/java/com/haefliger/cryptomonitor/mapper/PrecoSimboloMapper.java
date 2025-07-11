@@ -1,7 +1,7 @@
 package com.haefliger.cryptomonitor.mapper;
 
 
-import com.haefliger.cryptomonitor.strategy.dto.PrecoSimbolo;
+import com.haefliger.cryptomonitor.strategy.domain.PrecoSimboloDomain;
 import com.haefliger.cryptomonitor.ws.PricePoint;
 import org.mapstruct.CollectionMappingStrategy;
 import org.mapstruct.Mapper;
@@ -14,6 +14,6 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring", collectionMappingStrategy = CollectionMappingStrategy.ADDER_PREFERRED)
 public interface PrecoSimboloMapper {
 
-    PrecoSimbolo wsToMonitor(PricePoint pricePoints);
+    PrecoSimboloDomain wsToMonitor(PricePoint pricePoints);
 
 }

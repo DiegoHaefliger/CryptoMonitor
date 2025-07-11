@@ -2,8 +2,8 @@ package com.haefliger.cryptomonitor.ws;
 
 
 import com.haefliger.cryptomonitor.mapper.PrecoSimboloMapper;
-import com.haefliger.cryptomonitor.orchestrator.SimboloMonitoradoFactory;
-import com.haefliger.cryptomonitor.strategy.dto.PrecoSimbolo;
+import com.haefliger.cryptomonitor.orchestrator.SimboloMonitoradoFactoryService;
+import com.haefliger.cryptomonitor.strategy.domain.PrecoSimboloDomain;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ import static com.haefliger.cryptomonitor.utils.Constants.LIMIT_RECORDS;
 @Slf4j
 public class MultiSymbolPriceHandler implements PriceHandler {
 
-    private final SimboloMonitoradoFactory simboloMonitoradoFactory;
+    private final SimboloMonitoradoFactoryService simboloMonitoradoFactoryService;
     private final Map<String, Map<String, List<PricePoint>>> priceMap;
     private final PrecoSimboloMapper mapper;
 
@@ -76,7 +76,7 @@ public class MultiSymbolPriceHandler implements PriceHandler {
         return String.format("%s-%s", symbol, interval);
     }
 
-    private List<PrecoSimbolo> convertToPrecoSimbolos(List<PricePoint> prices) {
+    private List<PrecoSimboloDomain> convertToPrecoSimbolos(List<PricePoint> prices) {
         if (prices == null || prices.isEmpty()) {
             return Collections.emptyList();
         }
@@ -88,6 +88,6 @@ public class MultiSymbolPriceHandler implements PriceHandler {
 
     private void sendToOrchestrator(String symbol, String interval, List<PricePoint> prices) {
         String simboloIntervalo = getKey(symbol, interval);
-        simboloMonitoradoFactory.criarSimbolosMonitorados(convertToPrecoSimbolos(prices), simboloIntervalo);
+        simboloMonitoradoFactoryService.criarSimbolosMonitorados(convertToPrecoSimbolos(prices), simboloIntervalo);
     }
 }
