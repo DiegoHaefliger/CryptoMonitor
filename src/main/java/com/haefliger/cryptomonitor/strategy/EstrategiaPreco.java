@@ -5,6 +5,7 @@ import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
 import com.haefliger.cryptomonitor.service.KafkaService;
 import com.haefliger.cryptomonitor.strategy.domain.PrecoSimboloDomain;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -18,11 +19,11 @@ import java.util.List;
  */
 
 @Component
+@AllArgsConstructor
 @Slf4j
 public class EstrategiaPreco implements AnaliseEstrategia {
 
-    @Autowired
-    private KafkaService kafkaService;
+    private final KafkaService kafkaService;
 
     @Override
     public void analisar(List<PrecoSimboloDomain> historicoPreco, String simboloIntervalo, List<Estrategia> estrategias) {
