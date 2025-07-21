@@ -6,9 +6,9 @@ import com.haefliger.cryptomonitor.enums.OperadorComparacaoEnum;
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
 import com.haefliger.cryptomonitor.service.KafkaService;
 import com.haefliger.cryptomonitor.strategy.domain.PrecoSimboloDomain;
+import com.haefliger.cryptomonitor.utils.Formatter;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -26,6 +26,7 @@ import java.util.List;
 public class EstrategiaRSI implements AnaliseEstrategia {
 
     private static final Integer PERIODO_RSI = 14;
+    private static final String MENSAGEM_RSI = "%s %s";
 
     private final KafkaService kafkaService;
 
@@ -46,8 +47,8 @@ public class EstrategiaRSI implements AnaliseEstrategia {
             boolean isValorAlvo = operacao.comparar(rsiAlvo, rsiAtual);
 
             if (isValorAnterior && !isValorAlvo) {
+                sendMessage(simboloIntervalo, rsiAlvo, operacao);
                 log.info("RSI atual {} anterior {} é {} que o alvo {} para o símbolo: {}", rsiAtual, rsiAnterior, operacao.getSimbolo(), rsiAlvo, simboloIntervalo);
-                sendMessage(simboloIntervalo, rsiAlvo);
             }
 
         }
@@ -117,11 +118,12 @@ public class EstrategiaRSI implements AnaliseEstrategia {
         return TipoIndicadorEnum.RSI.name();
     }
 
-    private void sendMessage(String simboloIntervalo, double rsi) {
+    private void sendMessage(String simboloIntervalo, double rsi, OperadorComparacaoEnum operacao) {
         try {
             String simbolo = simboloIntervalo.split("-")[0];
-            String intervalo = simboloIntervalo.split("-")[1];
-            String[] parametros = new String[]{simbolo, String.valueOf(rsi), intervalo};
+            String intervalo = Formatter.formatInterval(simboloIntervalo.split("-")[1]);
+            String valorRsi = String.format(MENSAGEM_RSI, operacao.getSimbolo(), String.format("%.0f", rsi));
+            String[] parametros = new String[]{simbolo, valorRsi, intervalo};
 
             kafkaService.sendMessageEstrategias(TipoIndicadorEnum.RSI, parametros);
         } catch (Exception e) {
