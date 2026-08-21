@@ -22,7 +22,7 @@ não inventar um segundo.
 | # | Decisão | Escolha |
 |---|---|---|
 | D1 | Isolamento no Postgres | Base própria `crypto_monitor` na instância que já roda `crypto_alerts`, **reusando o usuário `admin`** |
-| D2 | Dados atuais do MySQL | **Não migrar.** Schema criado vazio pelo Liquibase; estratégias recadastradas |
+| D2 | Dados atuais do MySQL | **Não migrar.** Schema vazio pelo Liquibase; dump do MySQL dispensado pelo usuário em 21/08/2026 |
 | D3 | Persistência | `EntityManager` + JPQL tipado, nome de método derivado por fora (igual `trade/backend`) |
 | D4 | Lombok | **Removido junto na F4**, arquivo a arquivo, no mesmo passo do port |
 | D5 | Repositório | Segue repo git próprio, copiando os gates de build do `trade/backend` |
@@ -167,45 +167,78 @@ o build de referência é o 21: `JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64`.
 
 **Saída:** aplicação idêntica, rodando em 21.
 
-### F2 — MySQL → Postgres ainda no Spring
+### F2 — MySQL → Postgres ainda no Spring — **CONCLUÍDA (21/08/2026)**
 
-Migra o banco **antes** do framework, para não depurar dois problemas ao mesmo tempo.
-Com a D2 (começar vazio), a fase é curta.
+1. Base criada na instância que já roda `crypto_alerts`:
+   `CREATE DATABASE crypto_monitor OWNER admin`. `DATABASECHANGELOG` e
+   `DATABASECHANGELOGLOCK` nasceram dentro dela — nada compartilhado com `crypto_alerts`.
+2. Dump do MySQL **dispensado** pelo usuário: os dados não interessam. O serviço
+   `mysql` e o volume `mysql_data` saíram do `compose.yaml`; o `redis` ficou, e o
+   Postgres é externo (container `crypto_alerts_db`).
+3. `mysql-connector-j` → `org.postgresql:postgresql`; `driver-class-name` removido
+   (o Spring deduz). URL, usuário e senha passam a vir por env var com default local.
+4. Liquibase rodado contra a base vazia: 8 changeSets aplicados, schema conferido no `psql`.
 
-1. Criar a base na instância que já roda `crypto_alerts`:
-   ```sql
-   CREATE DATABASE crypto_monitor OWNER admin;
-   ```
-   Base separada, mesma instância, mesmo usuário. `DATABASECHANGELOG` e
-   `DATABASECHANGELOGLOCK` do Liquibase nascem dentro de `crypto_monitor` —
-   nenhum objeto é compartilhado com `crypto_alerts`.
-2. **Antes de mexer no `compose.yaml`**, guardar um dump do MySQL atual:
-   ```bash
-   mysqldump -h 127.0.0.1 -P 3307 -u diego -p CryptoPools > backup-cryptopools-$(date +%F).sql
-   ```
-   A D2 diz que os dados não vão ser migrados, não que podem ser destruídos sem cópia.
-   O dump é a única forma de reverter a decisão depois que o volume `mysql_data` sumir.
-3. Revisar o changelog. É quase todo portável (`createTable`, `addColumn`,
-   `addForeignKeyConstraint`, `modifyDataType`, `defaultValueComputed="CURRENT_TIMESTAMP"`
-   funcionam nos dois). Pontos de atenção:
-   - `autoIncrement="true"` vira `BIGSERIAL`/identity no Postgres — `GenerationType.IDENTITY`
-     continua correto sem mudança na entidade;
-   - o `<sql>` bruto do CHECK de `operador_logico` é válido em Postgres também;
-   - `BOOLEAN` deixa de ser `TINYINT(1)` e passa a ser boolean nativo — sem carga de dados,
-     isso só afeta o que o Hibernate lê/escreve, que já está correto.
-4. Trocar `mysql-connector-j` por `org.postgresql:postgresql`, ajustar
-   `spring.datasource.url` para `jdbc:postgresql://localhost:5432/crypto_monitor`
-   e remover `driver-class-name` (o Spring deduz).
-5. Rodar o Liquibase na base vazia e conferir o schema resultante contra o do MySQL
-   (`\d estrategias`, `\d condicoes_estrategia`): colunas, tipos, not-null, FK com
-   `ON DELETE CASCADE`, e o CHECK de `operador_logico`.
-6. Cadastrar uma estratégia pela rota e conferir que o id sai de 1 e a FK segura.
-7. `compose.yaml`: remover o serviço `mysql` e o volume `mysql_data`, manter o `redis`.
-   O Postgres não entra no compose do CryptoMonitor — é o container `crypto_alerts_db`,
-   que tem ciclo de vida próprio.
+**Achado principal da fase — `valor` era `TEXT`.** Com `ddl-auto=validate` o contexto
+não sobe:
 
-**Saída:** app Spring rodando em Postgres com schema criado do zero, suíte da F0 verde.
+```
+Schema-validation: wrong column type encountered in column [valor] in table
+[condicoes_estrategia]; found [text (Types#VARCHAR)], but expecting [numeric(20,8)]
+```
+
+`CondicaoEstrategia.valor` sempre foi `BigDecimal` com `precision=20, scale=8`, e o
+código faz `getValor().doubleValue()`. O `TEXT` do changelog nunca incomodou porque no
+MySQL o Hibernate rodava **sem schema-validation** — ninguém conferia. O changeSet 8
+corrige para `NUMERIC(20,8)`, com as duas grafias (`USING valor::numeric` no Postgres,
+`MODIFY COLUMN` no MySQL, já que `text`→`numeric` não tem cast de atribuição) e rollback.
+
+Vale registrar o que isso significa: **o banco de produção do MySQL guarda números numa
+coluna de texto**. Com a D2 (começar vazio) o problema morre junto com os dados; se a
+decisão fosse migrar, essa conversão seria o passo mais delicado da carga.
+
+**Verificação — `SchemaPostgresIT`, 9 testes contra o Postgres real:** criação do schema
+pelo Liquibase, validação do mapeamento pelo Hibernate, identity gerando id, enum
+gravado como texto (`AND`, `RSI`, `MENOR_IGUAL`, não ordinal), 8 casas decimais
+preservadas, CHECK de `operador_logico` recusando valor fora da lista, cascata da FK
+apagando as condições, e o `join fetch` funcionando.
+
+O teste **pula sozinho** quando o Postgres não responde (`@EnabledIf`), então `mvn verify`
+continua verde em máquina sem banco. Entrou o `maven-failsafe-plugin` para separar as
+duas suítes: `mvn test` = 70 testes rápidos, `mvn verify` = +9 de integração. Sem ele o
+sufixo `IT` não é coletado por ninguém e o teste nunca rodaria.
+
+```bash
+DB_PASSWORD=... ./mvnw -B verify     # 70 + 9, verde
+./mvnw -B verify                     # 70 + 9 pulados, verde
+```
+
+**Saída:** app Spring apontando para Postgres, schema criado do zero e validado.
 **Ponto de rollback seguro.**
+
+#### Achado que muda a F3: Testcontainers não enxerga o Docker desta máquina
+
+A primeira versão do `SchemaPostgresIT` usava Testcontainers e falhou em três
+configurações diferentes, sempre com:
+
+```
+Could not find a valid Docker environment. Please see logs and check configuration
+```
+
+O Docker está no ar e os dois sockets respondem `200` em `/_ping` via HTTP comum
+(`/var/run/docker.sock` e `~/.docker/desktop/docker.sock`). Quem falha é a detecção de
+estratégia do Testcontainers: o contexto ativo é `desktop-linux`, e a
+`DockerDesktopClientProviderStrategy` recebe **HTTP 400** ao chamar `/info` no
+`docker-cli.sock`. Nem `DOCKER_HOST` explícito nem forçar
+`EnvironmentAndSystemPropertyClientProviderStrategy` resolveram.
+
+**Isso não é um detalhe de teste: o Quarkus Dev Services usa Testcontainers por baixo.**
+Enquanto isso não for resolvido, na F3/F4 não haverá banco automático em `quarkus:dev`
+nem em `@QuarkusTest` — vai ser preciso apontar para o Postgres real com
+`quarkus.datasource.*` explícito e `quarkus.devservices.enabled=false`.
+
+Caminho mais provável de correção, a rodar fora desta sessão:
+`docker context use default` (o socket `default` responde normalmente).
 
 ### F3 — Esqueleto Quarkus
 
