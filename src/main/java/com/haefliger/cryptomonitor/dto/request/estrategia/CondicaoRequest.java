@@ -5,20 +5,19 @@ import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
 import com.haefliger.cryptomonitor.validation.NotEmptyWithFieldMessage;
 import com.haefliger.cryptomonitor.validation.OperadorComparacaoValido;
 import com.haefliger.cryptomonitor.validation.TipoIndicadorValido;
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Data
-public class CondicaoRequest {
-    @Schema(description = "Tipo de indicador", example = "RSI")
-    @TipoIndicadorValido
-    private TipoIndicadorEnum tipoIndicador;
+public record CondicaoRequest(
 
-    @Schema(description = "Operação lógica", example = "<")
-    @OperadorComparacaoValido
-    private OperadorComparacaoEnum operador;
+        @Schema(description = "Tipo de indicador", example = "RSI")
+        @TipoIndicadorValido
+        TipoIndicadorEnum tipoIndicador,
 
-    @Schema(description = "Valor do operador", example = "30")
-    @NotEmptyWithFieldMessage(fieldName = "valor")
-    private Integer valor;
+        @Schema(description = "Operação lógica", example = "<")
+        @OperadorComparacaoValido
+        OperadorComparacaoEnum operador,
+
+        @Schema(description = "Valor do operador", example = "30")
+        @NotEmptyWithFieldMessage(fieldName = "valor")
+        Integer valor) {
 }

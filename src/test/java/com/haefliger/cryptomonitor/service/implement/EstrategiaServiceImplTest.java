@@ -12,9 +12,10 @@ import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
 import com.haefliger.cryptomonitor.mapper.EstrategiaMapper;
 import com.haefliger.cryptomonitor.repository.EstrategiaRepository;
 import com.haefliger.cryptomonitor.service.RedisService;
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
+import jakarta.transaction.TransactionSynchronizationRegistry;
 import org.hibernate.service.spi.ServiceException;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,8 +23,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -52,69 +52,54 @@ class EstrategiaServiceImplTest {
     private RedisService redisService;
     @Mock
     private EstrategiaAsyncService estrategiaAsyncService;
+    @Mock
+    private TransactionSynchronizationRegistry transactionRegistry;
 
     @InjectMocks
     private EstrategiaServiceImpl service;
 
-    @BeforeEach
-    void abreTransacaoSimulada() {
-        TransactionSynchronizationManager.initSynchronization();
-    }
-
-    @AfterEach
-    void fechaTransacaoSimulada() {
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.clearSynchronization();
-        }
-    }
-
     private static EstrategiaRequest request() {
-        CondicaoRequest condicao = new CondicaoRequest();
-        condicao.setTipoIndicador(TipoIndicadorEnum.RSI);
-        condicao.setOperador(OperadorComparacaoEnum.MENOR);
-        condicao.setValor(30);
-        return EstrategiaRequest.builder()
-                .nome("Bitcoin RSI")
-                .simbolo("BTCUSDT")
-                .intervalo("60")
-                .operadorLogico(OperadorLogicoEnum.AND)
-                .permanente(false)
-                .condicoes(List.of(condicao))
-                .build();
+        CondicaoRequest condicao =
+                new CondicaoRequest(TipoIndicadorEnum.RSI, OperadorComparacaoEnum.MENOR, 30);
+        return new EstrategiaRequest("Bitcoin RSI", "BTCUSDT", "60",
+                OperadorLogicoEnum.AND, Boolean.FALSE, List.of(condicao));
     }
 
     private static Estrategia entidade(Long id) {
-        return Estrategia.builder()
-                .id(id)
-                .nome("Bitcoin RSI")
-                .simbolo("BTCUSDT")
-                .intervalo("60")
-                .operadorLogico(OperadorLogicoEnum.AND)
-                .ativo(Boolean.TRUE)
-                .permanente(Boolean.FALSE)
-                .build();
+        Estrategia estrategia = new Estrategia();
+        estrategia.setId(id);
+        estrategia.setNome("Bitcoin RSI");
+        estrategia.setSimbolo("BTCUSDT");
+        estrategia.setIntervalo("60");
+        estrategia.setOperadorLogico(OperadorLogicoEnum.AND);
+        estrategia.setAtivo(Boolean.TRUE);
+        estrategia.setPermanente(Boolean.FALSE);
+        return estrategia;
+    }
+
+    private Synchronization sincronizacaoRegistrada() {
+        ArgumentCaptor<Synchronization> captor = ArgumentCaptor.forClass(Synchronization.class);
+        verify(transactionRegistry).registerInterposedSynchronization(captor.capture());
+        return captor.getValue();
     }
 
     @Test
     @DisplayName("salvar mapeia a request com ativo=true, liga cada condição à estratégia e devolve o id")
     void salvarEstrategia() {
         Estrategia mapeada = entidade(null);
-        CondicaoEstrategia condicao = CondicaoEstrategia.builder()
-                .tipoIndicador(TipoIndicadorEnum.RSI)
-                .operador(OperadorComparacaoEnum.MENOR)
-                .valor(BigDecimal.valueOf(30))
-                .build();
-        SalvarEstrategiaResponse esperada = new SalvarEstrategiaResponse();
-        esperada.setId(7L);
+        CondicaoEstrategia condicao = new CondicaoEstrategia();
+        condicao.setTipoIndicador(TipoIndicadorEnum.RSI);
+        condicao.setOperador(OperadorComparacaoEnum.MENOR);
+        condicao.setValor(BigDecimal.valueOf(30));
 
         when(mapper.requestToEntityEstrategia(any(), eq(Boolean.TRUE))).thenReturn(mapeada);
         when(mapper.requestToEntityCondicaoEstrategia(anyList())).thenReturn(List.of(condicao));
         when(repository.save(mapeada)).thenReturn(entidade(7L));
-        when(mapper.longToSalvarEstrategiaResponse(7L)).thenReturn(esperada);
+        when(mapper.longToSalvarEstrategiaResponse(7L)).thenReturn(new SalvarEstrategiaResponse(7L));
 
         SalvarEstrategiaResponse resposta = service.salvarEstrategia(request());
 
-        assertThat(resposta.getId()).isEqualTo(7L);
+        assertThat(resposta.id()).isEqualTo(7L);
         assertThat(condicao.getEstrategia()).isSameAs(mapeada);
         assertThat(mapeada.getCondicoes()).containsExactly(condicao);
     }
@@ -134,7 +119,7 @@ class EstrategiaServiceImplTest {
     @Test
     @DisplayName("buscar sem filtro usa findAll; com filtro usa findByAtivo")
     void buscarEstrategia() {
-        BuscarEstrategiaResponse resposta = BuscarEstrategiaResponse.builder().estrategias(List.of()).build();
+        BuscarEstrategiaResponse resposta = new BuscarEstrategiaResponse(List.of());
         when(mapper.entityListToBuscarEstrategiaResponse(anyList())).thenReturn(resposta);
         when(repository.findAll()).thenReturn(List.of(entidade(1L)));
         when(repository.findByAtivo(Boolean.TRUE)).thenReturn(List.of(entidade(2L)));
@@ -165,8 +150,7 @@ class EstrategiaServiceImplTest {
     @Test
     @DisplayName("alterar status grava ativo, permanente e carimba dateLastUpdate")
     void statusEstrategia() {
-        Estrategia existente = entidade(3L);
-        when(repository.findById(3L)).thenReturn(Optional.of(existente));
+        when(repository.findById(3L)).thenReturn(Optional.of(entidade(3L)));
 
         LocalDateTime antes = LocalDateTime.now();
         service.statusEstrategia(3L, Boolean.FALSE, Boolean.TRUE);
@@ -193,27 +177,37 @@ class EstrategiaServiceImplTest {
     @Test
     @DisplayName("Redis e WebSocket só são tocados depois do commit, nunca durante a operação")
     void efeitosColateraisSoDepoisDoCommit() {
-        Estrategia existente = entidade(3L);
-        when(repository.findById(3L)).thenReturn(Optional.of(existente));
+        when(repository.findById(3L)).thenReturn(Optional.of(entidade(3L)));
 
         service.statusEstrategia(3L, Boolean.FALSE, Boolean.FALSE);
 
         verifyNoInteractions(redisService);
         verify(estrategiaAsyncService, never()).atualizaEstrategiasWS();
 
-        List<TransactionSynchronization> sincronizacoes = TransactionSynchronizationManager.getSynchronizations();
-        assertThat(sincronizacoes).hasSize(1);
-        sincronizacoes.get(0).afterCommit();
+        sincronizacaoRegistrada().afterCompletion(Status.STATUS_COMMITTED);
 
         verify(redisService).excluirEstrategiasAtivasRedis();
         verify(estrategiaAsyncService).atualizaEstrategiasWS();
     }
 
     @Test
+    @DisplayName("rollback não invalida cache nem reconecta o WebSocket")
+    void rollbackNaoDisparaEfeitos() {
+        when(repository.findById(3L)).thenReturn(Optional.of(entidade(3L)));
+
+        service.statusEstrategia(3L, Boolean.FALSE, Boolean.FALSE);
+        sincronizacaoRegistrada().afterCompletion(Status.STATUS_ROLLEDBACK);
+
+        verifyNoInteractions(redisService);
+        verify(estrategiaAsyncService, never()).atualizaEstrategiasWS();
+    }
+
+    @Test
     @DisplayName("sem transação ativa, registrar a sincronização estoura e a operação inteira falha")
     void semTransacaoAtivaFalha() {
-        TransactionSynchronizationManager.clearSynchronization();
         when(repository.findById(3L)).thenReturn(Optional.of(entidade(3L)));
+        doThrow(new IllegalStateException("Transaction is not active"))
+                .when(transactionRegistry).registerInterposedSynchronization(any());
 
         assertThatThrownBy(() -> service.statusEstrategia(3L, Boolean.TRUE, Boolean.FALSE))
                 .isInstanceOf(ServiceException.class)

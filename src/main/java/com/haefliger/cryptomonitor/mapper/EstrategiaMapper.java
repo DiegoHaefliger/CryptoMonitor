@@ -9,19 +9,26 @@ import com.haefliger.cryptomonitor.entity.CondicaoEstrategia;
 import com.haefliger.cryptomonitor.entity.Estrategia;
 import org.mapstruct.IterableMapping;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper
 public interface EstrategiaMapper {
 
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "dateCreated", ignore = true)
+    @Mapping(target = "dateLastUpdate", ignore = true)
     Estrategia requestToEntityEstrategia(EstrategiaRequest estrategiaRequest, Boolean ativo);
 
     List<CondicaoEstrategia> requestToEntityCondicaoEstrategia(List<CondicaoRequest> condicaoRequest);
 
     SalvarEstrategiaResponse longToSalvarEstrategiaResponse(Long id);
 
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "estrategia", ignore = true)
+    @Mapping(target = "dateCreated", ignore = true)
     CondicaoEstrategia condicaoRequestToCondicaoEstrategia(CondicaoRequest condicaoRequest);
 
     @IterableMapping(qualifiedByName = "entityToBuscarEstrategiaListaResponse")
@@ -31,9 +38,6 @@ public interface EstrategiaMapper {
     BuscarEstrategiaListaResponse entityToBuscarEstrategiaListaResponse(Estrategia estrategia);
 
     default BuscarEstrategiaResponse entityListToBuscarEstrategiaResponse(List<Estrategia> estrategias) {
-        List<BuscarEstrategiaListaResponse> lista = entityListToBuscarEstrategiaListaResponse(estrategias);
-        return BuscarEstrategiaResponse.builder()
-                .estrategias(lista)
-                .build();
+        return new BuscarEstrategiaResponse(entityListToBuscarEstrategiaListaResponse(estrategias));
     }
 }

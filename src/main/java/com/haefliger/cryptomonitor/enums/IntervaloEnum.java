@@ -1,10 +1,5 @@
 package com.haefliger.cryptomonitor.enums;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
-@Getter
-@AllArgsConstructor
 public enum IntervaloEnum {
     UM("1"),
     CINCO("5"),
@@ -21,6 +16,14 @@ public enum IntervaloEnum {
     MENSAL("M");
 
     private final String valor;
+
+    IntervaloEnum(String valor) {
+        this.valor = valor;
+    }
+
+    public String getValor() {
+        return valor;
+    }
 
     public static boolean isValid(String value) {
         for (IntervaloEnum intervalo : values()) {
@@ -41,4 +44,3 @@ public enum IntervaloEnum {
     }
 
 }
-

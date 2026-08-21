@@ -1,15 +1,9 @@
 package com.haefliger.cryptomonitor.utils;
 
+public final class Formatter {
 
-import lombok.experimental.UtilityClass;
-
-/**
- * Author diego-haefliger
- * Date 7/19/25
- */
-
-@UtilityClass
-public class Formatter {
+    private Formatter() {
+    }
 
     public static String formatInterval(String input) {
         if (input != null && input.matches(".*[a-zA-Z].*")) {

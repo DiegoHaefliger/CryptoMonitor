@@ -4,11 +4,9 @@ import com.google.gson.*;
 import com.haefliger.cryptomonitor.ws.domain.PricePointDomain;
 import com.haefliger.cryptomonitor.ws.service.MultiSymboPriceHandler;
 import com.haefliger.cryptomonitor.ws.service.impl.MultiSymboPriceHandlerService;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.handshake.ServerHandshake;
-import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -29,11 +27,9 @@ import static com.haefliger.cryptomonitor.utils.Constants.*;
  * Author diego-haefliger
  * Date 14/06/25
  */
-@Slf4j
-@Getter
-@Setter
-@Component
 public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
+
+    private static final Logger log = LoggerFactory.getLogger(WebSocketClient.class);
 
     private ConnectionListener connectionListener;
     private Map<String, List<String>> symbolIntervals;
@@ -46,6 +42,10 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
     public static final String SUBSCRIBE = "subscribe";
     public static final String UNSUBSCRIBE = "unsubscribe";
     public static final String ARGS = "args";
+
+    public void setConnectionListener(ConnectionListener connectionListener) {
+        this.connectionListener = connectionListener;
+    }
 
     public WebSocketClient(Map<String, List<String>> symbolIntervals, MultiSymboPriceHandler handler) throws Exception {
         super(new URI(WEBSOCKET_URL_LINEAR));

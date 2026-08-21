@@ -7,7 +7,7 @@ import org.mapstruct.factory.Mappers;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Mapper(componentModel = "spring")
+@Mapper
 public interface EstrategiaWebSocketMapper {
 
     EstrategiaWebSocketMapper INSTANCE = Mappers.getMapper(EstrategiaWebSocketMapper.class);

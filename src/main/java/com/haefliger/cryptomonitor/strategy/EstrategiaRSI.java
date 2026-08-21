@@ -7,9 +7,9 @@ import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
 import com.haefliger.cryptomonitor.service.KafkaService;
 import com.haefliger.cryptomonitor.strategy.domain.PrecoSimboloDomain;
 import com.haefliger.cryptomonitor.utils.Formatter;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import jakarta.enterprise.context.ApplicationScoped;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -20,15 +20,19 @@ import java.util.List;
  * Date 25/06/25
  */
 
-@Component
-@AllArgsConstructor
-@Slf4j
+@ApplicationScoped
 public class EstrategiaRSI implements AnaliseEstrategia {
+
+    private static final Logger log = LoggerFactory.getLogger(EstrategiaRSI.class);
 
     private static final Integer PERIODO_RSI = 14;
     private static final String MENSAGEM_RSI = "%s %s";
 
     private final KafkaService kafkaService;
+
+    EstrategiaRSI(KafkaService kafkaService) {
+        this.kafkaService = kafkaService;
+    }
 
     @Override
     public void analisar(List<PrecoSimboloDomain> historicoPreco, String simboloIntervalo, List<Estrategia> estrategias) {
@@ -64,13 +68,13 @@ public class EstrategiaRSI implements AnaliseEstrategia {
         }
 
         List<PrecoSimboloDomain> sortedHistorico = new ArrayList<>(historicoPreco);
-        sortedHistorico.sort(Comparator.comparing(PrecoSimboloDomain::getTimestamp));
+        sortedHistorico.sort(Comparator.comparing(PrecoSimboloDomain::timestamp));
 
         double gain = 0.0;
         double loss = 0.0;
 
         for (int i = 1; i <= periodo; i++) {
-            double change = sortedHistorico.get(i).getPrice().doubleValue() - sortedHistorico.get(i - 1).getPrice().doubleValue();
+            double change = sortedHistorico.get(i).price().doubleValue() - sortedHistorico.get(i - 1).price().doubleValue();
             if (change > 0) {
                 gain += change;
             } else {
@@ -90,7 +94,7 @@ public class EstrategiaRSI implements AnaliseEstrategia {
 
         // Suavização de Wilder e cálculo dos próximos RSIs
         for (int i = periodo + 1; i < sortedHistorico.size(); i++) {
-            double change = sortedHistorico.get(i).getPrice().doubleValue() - sortedHistorico.get(i - 1).getPrice().doubleValue();
+            double change = sortedHistorico.get(i).price().doubleValue() - sortedHistorico.get(i - 1).price().doubleValue();
             double currentGain = change > 0 ? change : 0;
             double currentLoss = change < 0 ? -change : 0;
 

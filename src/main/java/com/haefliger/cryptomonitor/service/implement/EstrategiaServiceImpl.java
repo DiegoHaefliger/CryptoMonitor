@@ -9,46 +9,60 @@ import com.haefliger.cryptomonitor.mapper.EstrategiaMapper;
 import com.haefliger.cryptomonitor.repository.EstrategiaRepository;
 import com.haefliger.cryptomonitor.service.EstrategiaService;
 import com.haefliger.cryptomonitor.service.RedisService;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
+import jakarta.transaction.TransactionSynchronizationRegistry;
+import jakarta.transaction.Transactional;
 import org.hibernate.service.spi.ServiceException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Service
-@AllArgsConstructor
-@Slf4j
+@ApplicationScoped
 public class EstrategiaServiceImpl implements EstrategiaService {
+
+    private static final Logger log = LoggerFactory.getLogger(EstrategiaServiceImpl.class);
 
     private final EstrategiaRepository repository;
     private final EstrategiaMapper mapper;
     private final RedisService redisService;
     private final EstrategiaAsyncService estrategiaAsyncService;
+    private final TransactionSynchronizationRegistry transactionRegistry;
+
+    EstrategiaServiceImpl(EstrategiaRepository repository,
+                          EstrategiaMapper mapper,
+                          RedisService redisService,
+                          EstrategiaAsyncService estrategiaAsyncService,
+                          TransactionSynchronizationRegistry transactionRegistry) {
+        this.repository = repository;
+        this.mapper = mapper;
+        this.redisService = redisService;
+        this.estrategiaAsyncService = estrategiaAsyncService;
+        this.transactionRegistry = transactionRegistry;
+    }
 
     @Override
     @Transactional
     public SalvarEstrategiaResponse salvarEstrategia(EstrategiaRequest estrategiaRequest) {
         try {
-            log.info("Salvando estratégia: {}", estrategiaRequest.getNome());
+            log.info("Salvando estratégia: {}", estrategiaRequest.nome());
             final Estrategia estrategia = toEstrategiaEntity(estrategiaRequest);
             final Estrategia savedEstrategia = repository.save(estrategia);
 
             atualizarWebSocket();
             return mapper.longToSalvarEstrategiaResponse(savedEstrategia.getId());
         } catch (Exception e) {
-            log.error("Erro ao salvar estratégia: {}", estrategiaRequest.getNome(), e);
+            log.error("Erro ao salvar estratégia: {}", estrategiaRequest.nome(), e);
             throw new ServiceException("Erro ao salvar estratégia", e);
         }
     }
 
     private Estrategia toEstrategiaEntity(EstrategiaRequest estrategiaRequest) {
         Estrategia estrategia = mapper.requestToEntityEstrategia(estrategiaRequest, true);
-        List<CondicaoEstrategia> condicoes = mapper.requestToEntityCondicaoEstrategia(estrategiaRequest.getCondicoes());
+        List<CondicaoEstrategia> condicoes = mapper.requestToEntityCondicaoEstrategia(estrategiaRequest.condicoes());
         condicoes.forEach(cond -> cond.setEstrategia(estrategia));
         estrategia.setCondicoes(condicoes);
         return estrategia;
@@ -102,12 +116,18 @@ public class EstrategiaServiceImpl implements EstrategiaService {
     }
 
     private void atualizarWebSocket() {
-        // Garante que a atualização via WebSocket só ocorra após o commit da transação
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+        transactionRegistry.registerInterposedSynchronization(new Synchronization() {
             @Override
-            public void afterCommit() {
-                redisService.excluirEstrategiasAtivasRedis();
-                estrategiaAsyncService.atualizaEstrategiasWS();
+            public void beforeCompletion() {
+                // nada a fazer antes do commit
+            }
+
+            @Override
+            public void afterCompletion(int status) {
+                if (status == Status.STATUS_COMMITTED) {
+                    redisService.excluirEstrategiasAtivasRedis();
+                    estrategiaAsyncService.atualizaEstrategiasWS();
+                }
             }
         });
     }

@@ -39,21 +39,44 @@ class EstrategiaRequestValidacaoTest {
     }
 
     private static CondicaoRequest condicaoValida() {
-        CondicaoRequest condicao = new CondicaoRequest();
-        condicao.setTipoIndicador(TipoIndicadorEnum.RSI);
-        condicao.setOperador(OperadorComparacaoEnum.MENOR);
-        condicao.setValor(30);
-        return condicao;
+        return new CondicaoRequest(TipoIndicadorEnum.RSI, OperadorComparacaoEnum.MENOR, 30);
     }
 
-    private static EstrategiaRequest.EstrategiaRequestBuilder valida() {
-        return EstrategiaRequest.builder()
-                .nome("Bitcoin RSI")
-                .simbolo("BTCUSDT")
-                .intervalo("60")
-                .operadorLogico(OperadorLogicoEnum.AND)
-                .permanente(Boolean.FALSE)
-                .condicoes(List.of(condicaoValida()));
+    private record Cenario(String nome, String simbolo, String intervalo, OperadorLogicoEnum operadorLogico,
+                           Boolean permanente, List<CondicaoRequest> condicoes) {
+
+        EstrategiaRequest build() {
+            return new EstrategiaRequest(nome, simbolo, intervalo, operadorLogico, permanente, condicoes);
+        }
+
+        Cenario nome(String valor) {
+            return new Cenario(valor, simbolo, intervalo, operadorLogico, permanente, condicoes);
+        }
+
+        Cenario simbolo(String valor) {
+            return new Cenario(nome, valor, intervalo, operadorLogico, permanente, condicoes);
+        }
+
+        Cenario intervalo(String valor) {
+            return new Cenario(nome, simbolo, valor, operadorLogico, permanente, condicoes);
+        }
+
+        Cenario operadorLogico(OperadorLogicoEnum valor) {
+            return new Cenario(nome, simbolo, intervalo, valor, permanente, condicoes);
+        }
+
+        Cenario permanente(Boolean valor) {
+            return new Cenario(nome, simbolo, intervalo, operadorLogico, valor, condicoes);
+        }
+
+        Cenario condicoes(List<CondicaoRequest> valor) {
+            return new Cenario(nome, simbolo, intervalo, operadorLogico, permanente, valor);
+        }
+    }
+
+    private static Cenario valida() {
+        return new Cenario("Bitcoin RSI", "BTCUSDT", "60", OperadorLogicoEnum.AND,
+                Boolean.FALSE, List.of(condicaoValida()));
     }
 
     private static List<String> mensagens(EstrategiaRequest request) {
@@ -115,8 +138,7 @@ class EstrategiaRequestValidacaoTest {
 
     @Test
     void tipoIndicadorNuloNaCondicaoAninhada() {
-        CondicaoRequest condicao = condicaoValida();
-        condicao.setTipoIndicador(null);
+        CondicaoRequest condicao = new CondicaoRequest(null, OperadorComparacaoEnum.MENOR, 30);
 
         assertThat(mensagens(valida().condicoes(List.of(condicao)).build()))
                 .containsExactly("Tipo de indicador inválido. Valores válidos: PRECO, RSI, MEDIA_MOVEL");
@@ -124,8 +146,7 @@ class EstrategiaRequestValidacaoTest {
 
     @Test
     void operadorNuloNaCondicaoAninhada() {
-        CondicaoRequest condicao = condicaoValida();
-        condicao.setOperador(null);
+        CondicaoRequest condicao = new CondicaoRequest(TipoIndicadorEnum.RSI, null, 30);
 
         assertThat(mensagens(valida().condicoes(List.of(condicao)).build()))
                 .containsExactly("Operador inválido. Valores válidos: <, >, <=, >=, =");
@@ -133,8 +154,8 @@ class EstrategiaRequestValidacaoTest {
 
     @Test
     void valorNuloNaCondicaoAninhada() {
-        CondicaoRequest condicao = condicaoValida();
-        condicao.setValor(null);
+        CondicaoRequest condicao =
+                new CondicaoRequest(TipoIndicadorEnum.RSI, OperadorComparacaoEnum.MENOR, null);
 
         assertThat(mensagens(valida().condicoes(List.of(condicao)).build()))
                 .containsExactly("Campo 'valor' não pode ser vazio");

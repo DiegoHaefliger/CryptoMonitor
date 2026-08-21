@@ -1,38 +1,49 @@
 package com.haefliger.cryptomonitor.ws.service.impl;
 
-
 import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.mapper.EstrategiaWebSocketMapper;
 import com.haefliger.cryptomonitor.service.RedisService;
 import com.haefliger.cryptomonitor.ws.WebSocketConnectionManager;
 import com.haefliger.cryptomonitor.ws.service.WebSocketService;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 
-/**
- * Author diego-haefliger
- * Date 15/06/25
- */
-
-@Service
-@AllArgsConstructor
-@Slf4j
+@ApplicationScoped
 public class WebSocketServiceImpl implements WebSocketService {
 
+    private static final Logger log = LoggerFactory.getLogger(WebSocketServiceImpl.class);
+
     private final MultiSymboPriceHandlerService handler;
-    private static WebSocketConnectionManager wsManager = null;
     private final EstrategiaWebSocketMapper estrategiaWebSocketMapper;
     private final RedisService redisService;
+    private final int maxReconnectAttempts;
+    private final int baseReconnectDelaySeconds;
+
+    private WebSocketConnectionManager wsManager;
+
+    WebSocketServiceImpl(MultiSymboPriceHandlerService handler,
+                         EstrategiaWebSocketMapper estrategiaWebSocketMapper,
+                         RedisService redisService,
+                         @ConfigProperty(name = "websocket.max-reconnect-attempts", defaultValue = "10") int maxReconnectAttempts,
+                         @ConfigProperty(name = "websocket.base-reconnect-delay-seconds", defaultValue = "5") int baseReconnectDelaySeconds) {
+        this.handler = handler;
+        this.estrategiaWebSocketMapper = estrategiaWebSocketMapper;
+        this.redisService = redisService;
+        this.maxReconnectAttempts = maxReconnectAttempts;
+        this.baseReconnectDelaySeconds = baseReconnectDelaySeconds;
+    }
 
     @Override
     public synchronized void conect(Map<String, List<String>> symbolIntervals) {
         try {
             if (wsManager == null) {
-                wsManager = new WebSocketConnectionManager(symbolIntervals, handler);
+                wsManager = new WebSocketConnectionManager(
+                        symbolIntervals, handler, maxReconnectAttempts, baseReconnectDelaySeconds);
                 wsManager.connect();
             } else {
                 wsManager.updateSubscriptions(symbolIntervals);

@@ -5,19 +5,12 @@ import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.enums.OperadorComparacaoEnum;
 import com.haefliger.cryptomonitor.enums.OperadorLogicoEnum;
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
+import io.quarkus.test.TestTransaction;
+import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.test.context.TestPropertySource;
-import org.testcontainers.DockerClientFactory;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -25,62 +18,49 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@TestPropertySource(properties = {
-        "spring.liquibase.change-log=classpath:db/changelog/changelog-master.xml",
-        "spring.jpa.hibernate.ddl-auto=validate"
-})
-@Testcontainers
-@EnabledIf("dockerDisponivel")
+@QuarkusTest
 @DisplayName("Schema no Postgres — Liquibase e mapeamento das entidades")
-class SchemaPostgresIT {
+class SchemaPostgresTest {
 
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15");
+    @Inject
+    EntityManager em;
 
-    static boolean dockerDisponivel() {
-        return DockerClientFactory.instance().isDockerAvailable();
-    }
-
-    @Autowired
-    private EntityManager em;
-
-    @Autowired
-    private EstrategiaRepository estrategiaRepository;
+    @Inject
+    EstrategiaRepository estrategiaRepository;
 
     private static Estrategia comCondicao() {
-        Estrategia estrategia = Estrategia.builder()
-                .nome("Bitcoin RSI")
-                .simbolo("BTCUSDT")
-                .intervalo("60")
-                .operadorLogico(OperadorLogicoEnum.AND)
-                .ativo(Boolean.TRUE)
-                .permanente(Boolean.FALSE)
-                .build();
-        CondicaoEstrategia condicao = CondicaoEstrategia.builder()
-                .tipoIndicador(TipoIndicadorEnum.RSI)
-                .operador(OperadorComparacaoEnum.MENOR_IGUAL)
-                .valor(new BigDecimal("30.12345678"))
-                .estrategia(estrategia)
-                .build();
+        Estrategia estrategia = new Estrategia();
+        estrategia.setNome("Bitcoin RSI");
+        estrategia.setSimbolo("BTCUSDT");
+        estrategia.setIntervalo("60");
+        estrategia.setOperadorLogico(OperadorLogicoEnum.AND);
+        estrategia.setAtivo(Boolean.TRUE);
+        estrategia.setPermanente(Boolean.FALSE);
+
+        CondicaoEstrategia condicao = new CondicaoEstrategia();
+        condicao.setTipoIndicador(TipoIndicadorEnum.RSI);
+        condicao.setOperador(OperadorComparacaoEnum.MENOR_IGUAL);
+        condicao.setValor(new BigDecimal("30.12345678"));
+        condicao.setEstrategia(estrategia);
+
         estrategia.setCondicoes(List.of(condicao));
         return estrategia;
     }
 
     @Test
+    @TestTransaction
     @DisplayName("Liquibase cria as duas tabelas e o Hibernate valida o mapeamento contra elas")
     void schemaCriadoEValidado() {
         @SuppressWarnings("unchecked")
         List<String> tabelas = em.createNativeQuery(
-                        "select table_name from information_schema.tables where table_schema = 'public' order by table_name")
+                        "select table_name from information_schema.tables where table_schema = 'public'")
                 .getResultList();
 
         assertThat(tabelas).contains("estrategias", "condicoes_estrategia", "databasechangelog");
     }
 
     @Test
+    @TestTransaction
     @DisplayName("colunas booleanas nascem BOOLEAN nativo, não TINYINT como era no MySQL")
     void colunasBooleanas() {
         @SuppressWarnings("unchecked")
@@ -94,6 +74,21 @@ class SchemaPostgresIT {
     }
 
     @Test
+    @TestTransaction
+    @DisplayName("valor é numeric(20,8), não o text que o changelog criava antes da F2")
+    void tipoDaColunaValor() {
+        Object[] coluna = (Object[]) em.createNativeQuery(
+                        "select data_type, numeric_precision, numeric_scale from information_schema.columns"
+                                + " where table_name = 'condicoes_estrategia' and column_name = 'valor'")
+                .getSingleResult();
+
+        assertThat(coluna[0]).isEqualTo("numeric");
+        assertThat(((Number) coluna[1]).intValue()).isEqualTo(20);
+        assertThat(((Number) coluna[2]).intValue()).isEqualTo(8);
+    }
+
+    @Test
+    @TestTransaction
     @DisplayName("id é identity do Postgres e vem preenchido depois do insert")
     void identityGeraId() {
         Estrategia salva = estrategiaRepository.save(comCondicao());
@@ -104,6 +99,7 @@ class SchemaPostgresIT {
     }
 
     @Test
+    @TestTransaction
     @DisplayName("enum grava como texto do name(), não como ordinal")
     void enumComoTexto() {
         Estrategia salva = estrategiaRepository.save(comCondicao());
@@ -121,6 +117,7 @@ class SchemaPostgresIT {
     }
 
     @Test
+    @TestTransaction
     @DisplayName("BigDecimal mantém as 8 casas decimais declaradas na coluna")
     void precisaoDoValor() {
         Estrategia salva = estrategiaRepository.save(comCondicao());
@@ -134,7 +131,8 @@ class SchemaPostgresIT {
     }
 
     @Test
-    @DisplayName("date_created ganha CURRENT_TIMESTAMP e o @PrePersist preenche antes do insert")
+    @TestTransaction
+    @DisplayName("date_created é preenchido pelo @PrePersist antes do insert")
     void dataDeCriacao() {
         Estrategia salva = estrategiaRepository.save(comCondicao());
         em.flush();
@@ -144,6 +142,7 @@ class SchemaPostgresIT {
     }
 
     @Test
+    @TestTransaction
     @DisplayName("o CHECK de operador_logico continua valendo no Postgres")
     void checkDeOperadorLogico() {
         assertThatThrownBy(() -> {
@@ -156,6 +155,7 @@ class SchemaPostgresIT {
     }
 
     @Test
+    @TestTransaction
     @DisplayName("apagar a estratégia leva as condições junto pela FK ON DELETE CASCADE do banco")
     void cascataNoBanco() {
         Estrategia salva = estrategiaRepository.save(comCondicao());
@@ -175,6 +175,7 @@ class SchemaPostgresIT {
     }
 
     @Test
+    @TestTransaction
     @DisplayName("consulta com join fetch das condições funciona no Postgres")
     void buscaComJoinFetch() {
         estrategiaRepository.save(comCondicao());

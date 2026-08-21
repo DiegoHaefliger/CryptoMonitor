@@ -41,10 +41,8 @@ class EstrategiaRSITest {
     private static List<PrecoSimboloDomain> serie(double... precos) {
         Instant base = Instant.parse("2026-01-01T00:00:00Z");
         return IntStream.range(0, precos.length)
-                .mapToObj(i -> PrecoSimboloDomain.builder()
-                        .price(BigDecimal.valueOf(precos[i]))
-                        .timestamp(base.plusSeconds(60L * i))
-                        .build())
+                .mapToObj(i -> new PrecoSimboloDomain(
+                        BigDecimal.valueOf(precos[i]), base.plusSeconds(60L * i)))
                 .toList();
     }
 
@@ -132,8 +130,11 @@ class EstrategiaRSITest {
     @Test
     @DisplayName("estratégia sem condição é ignorada, sem erro")
     void estrategiaSemCondicaoEhIgnorada() {
-        Estrategia semCondicao = Estrategia.builder().nome("vazia").condicoes(List.of()).build();
-        Estrategia condicaoNula = Estrategia.builder().nome("nula").condicoes(null).build();
+        Estrategia semCondicao = new Estrategia();
+        semCondicao.setNome("vazia");
+        semCondicao.setCondicoes(List.of());
+        Estrategia condicaoNula = new Estrategia();
+        condicaoNula.setNome("nula");
 
         estrategiaRSI.analisar(serie(SERIE_MISTA), "BTCUSDT-60", List.of(semCondicao, condicaoNula));
 
@@ -146,11 +147,15 @@ class EstrategiaRSITest {
     }
 
     private static Estrategia estrategiaComCondicao(OperadorComparacaoEnum operador, int valor) {
-        CondicaoEstrategia condicao = CondicaoEstrategia.builder()
-                .tipoIndicador(TipoIndicadorEnum.RSI)
-                .operador(operador)
-                .valor(BigDecimal.valueOf(valor))
-                .build();
-        return Estrategia.builder().nome("rsi").simbolo("BTCUSDT").condicoes(List.of(condicao)).build();
+        CondicaoEstrategia condicao = new CondicaoEstrategia();
+        condicao.setTipoIndicador(TipoIndicadorEnum.RSI);
+        condicao.setOperador(operador);
+        condicao.setValor(BigDecimal.valueOf(valor));
+
+        Estrategia estrategia = new Estrategia();
+        estrategia.setNome("rsi");
+        estrategia.setSimbolo("BTCUSDT");
+        estrategia.setCondicoes(List.of(condicao));
+        return estrategia;
     }
 }

@@ -11,7 +11,7 @@ import org.mapstruct.Mapper;
  * Date 26/06/25
  */
 
-@Mapper(componentModel = "spring", collectionMappingStrategy = CollectionMappingStrategy.ADDER_PREFERRED)
+@Mapper(collectionMappingStrategy = CollectionMappingStrategy.ADDER_PREFERRED)
 public interface PrecoSimboloMapper {
 
     PrecoSimboloDomain wsToMonitor(PricePointDomain pricePointsDomain);

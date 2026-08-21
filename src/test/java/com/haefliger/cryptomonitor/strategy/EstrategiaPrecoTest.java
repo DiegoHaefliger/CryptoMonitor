@@ -39,20 +39,22 @@ class EstrategiaPrecoTest {
     private static List<PrecoSimboloDomain> serie(String... precos) {
         Instant base = Instant.parse("2026-01-01T00:00:00Z");
         return IntStream.range(0, precos.length)
-                .mapToObj(i -> PrecoSimboloDomain.builder()
-                        .price(new BigDecimal(precos[i]))
-                        .timestamp(base.plusSeconds(60L * i))
-                        .build())
+                .mapToObj(i -> new PrecoSimboloDomain(
+                        new BigDecimal(precos[i]), base.plusSeconds(60L * i)))
                 .toList();
     }
 
     private static Estrategia estrategiaComAlvo(String alvo) {
-        CondicaoEstrategia condicao = CondicaoEstrategia.builder()
-                .tipoIndicador(TipoIndicadorEnum.PRECO)
-                .operador(OperadorComparacaoEnum.MAIOR)
-                .valor(new BigDecimal(alvo))
-                .build();
-        return Estrategia.builder().nome("preco").simbolo("BTCUSDT").condicoes(List.of(condicao)).build();
+        CondicaoEstrategia condicao = new CondicaoEstrategia();
+        condicao.setTipoIndicador(TipoIndicadorEnum.PRECO);
+        condicao.setOperador(OperadorComparacaoEnum.MAIOR);
+        condicao.setValor(new BigDecimal(alvo));
+
+        Estrategia estrategia = new Estrategia();
+        estrategia.setNome("preco");
+        estrategia.setSimbolo("BTCUSDT");
+        estrategia.setCondicoes(List.of(condicao));
+        return estrategia;
     }
 
     @Test
@@ -113,7 +115,9 @@ class EstrategiaPrecoTest {
     @Test
     @DisplayName("estratégia com lista de condições vazia estoura IndexOutOfBounds — sem guarda, diferente da EstrategiaRSI")
     void condicaoVaziaEstoura() {
-        Estrategia semCondicao = Estrategia.builder().nome("vazia").condicoes(List.of()).build();
+        Estrategia semCondicao = new Estrategia();
+        semCondicao.setNome("vazia");
+        semCondicao.setCondicoes(List.of());
 
         assertThatThrownBy(() -> estrategiaPreco.analisar(serie("99", "101"), "BTCUSDT-60", List.of(semCondicao)))
                 .isInstanceOf(IndexOutOfBoundsException.class);
