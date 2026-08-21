@@ -316,15 +316,73 @@ e **não derruba a aplicação** — mesmo comportamento da versão Spring.
 
 **Saída:** aplicação inteira em Quarkus, zero Spring, zero Lombok, 80 testes verdes.
 
-### F5 — Paridade e corte
+### F5 — Paridade e corte — **CONCLUÍDA (21/08/2026)**
 
-1. Comparar OpenAPI antigo x novo (`/v3/api-docs` x `/q/openapi`) — divergência aqui é contrato quebrado com o front.
-2. Comparar o payload real de cada rota (mesma base, mesmas requisições).
-3. Validar o consumo do cache Redis com dados gravados pela versão Spring (formato da F0).
-4. Validar publicação no Kafka: mesmo tópico, mesma chave, mesmo JSON.
-5. Rodar os dois em paralelo por um período contra a mesma base, se o ambiente permitir.
+Comparação feita com as **duas versões rodando ao mesmo tempo contra o mesmo banco**:
+Spring na 8080 (build do commit da F2, num worktree do git) e Quarkus na 8086. Redis
+(`redis:7.2`, porta 6395) e Kafka (`apache/kafka:3.9.0`, porta 9092) subidos pelo
+`compose.yaml`.
 
-**Saída:** decisão de corte com evidência, não com fé.
+O serviço Kafka do compose se chama `cryptomonitor-kafka`: já existia um container
+parado chamado `kafka` na máquina (`cp-kafka:7.4.0`, de 3 meses atrás, com zookeeper),
+e ele não foi tocado. Há também um `cryptomensageria-kafka-1` parado, que é
+provavelmente quem consome o tópico `strategy` do outro lado.
+
+**1. Contrato HTTP — idêntico.** Roteiro de 10 cenários (POST válido, GET sem filtro,
+GET `ativo=true`, GET `ativo=false`, PUT status, GET depois de desativar, POST inválido,
+POST com condições vazia, DELETE, GET final) rodado contra as duas versões com o banco
+limpo antes de cada uma. `diff` byte a byte, normalizando id e timestamp: **nenhuma
+divergência**.
+
+**2. OpenAPI — idêntico** em rotas, métodos, nomes de parâmetro, `required` e códigos de
+resposta. A única diferença que sobrou é uma correção: o Spring documentava `200` e `201`
+no POST porque a anotação dizia 200 enquanto o `@ResponseStatus` devolvia 201. A versão
+Quarkus documenta só `201`, que é o que sempre aconteceu de verdade.
+
+**3. Cache Redis — idêntico e cruzado.** As duas versões gravam uma `string` com o mesmo
+JSON, byte a byte. E o mais importante: cache **escrito pela versão Spring foi lido pela
+Quarkus** na subida, sem reescrita (340 bytes intactos, nenhum aviso de "nenhuma
+estratégia ativa"). O corte não invalida o cache em circulação.
+
+**4. Kafka — publicação real verificada.** O gatilho de produção depende de fechamento de
+candle na Bybit e não dá para forçar, então a publicação foi disparada por um teste
+descartável (não commitado) chamando o `KafkaService` real contra o broker. Consumido do
+tópico:
+
+```
+RSI   -> 🏆 Estratégia de RSI acionada para o ativo BTCUSDT valor RSI < 30 intervalo 60m
+PRECO -> 💰 Estratégia de Preço acionada para o ativo BTCUSDT valor $70000
+```
+
+Tópico `strategy`, chave pelo nome do indicador, texto e emoji intactos — igual ao que os
+testes das duas versões travam.
+
+#### Divergência encontrada e corrigida: 500 no lugar de 400
+
+Único defeito real que a fase achou. No Spring, `@RequestParam` sem default é obrigatório
+e a chamada sem o parâmetro morria em **400** antes de chegar ao serviço. Em JAX-RS,
+`@QueryParam` ausente vira `null` — então `DELETE /estrategia` e `PUT /estrategia/status`
+sem parâmetros passavam `null` adiante e estouravam **500**.
+
+Corrigido com `@NotNull` nos parâmetros, que joga a violação no mesmo `ExceptionMapper`.
+O corpo é superconjunto do que o Spring devolvia (mesmos `timestamp`, `status`, `error`,
+`path`, mais o `errors` dizendo qual parâmetro faltou), e o `required` do OpenAPI passou a
+bater. Dois testes novos travam isso. **82 testes verdes.**
+
+Vale registrar por que passou despercebido: nenhum teste da F0 chamava as rotas sem
+parâmetro, porque no Spring aquilo nem chegava ao controller. Comparar as duas versões de
+pé achou o que a suíte não achava.
+
+#### Achado sem ação: ordem das mensagens de erro
+
+O array `errors` sai em ordem diferente a cada chamada — **nas duas versões**. São 5
+chamadas idênticas ao Spring produzindo 5 ordens distintas, e o mesmo no Quarkus. É
+`Set<ConstraintViolation>`, sem ordem definida; não é regressão da migração e não foi
+"corrigido" aqui. Fica o alerta: **o `TradeFront` não pode depender da ordem** — e não
+podia antes também.
+
+**Saída:** paridade demonstrada com evidência nos quatro canais (HTTP, OpenAPI, Redis,
+Kafka). O corte pode acontecer.
 
 ### F6 — Gates de build (alinhar com `trade/backend`)
 
