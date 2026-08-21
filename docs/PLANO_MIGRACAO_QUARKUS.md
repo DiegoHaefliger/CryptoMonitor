@@ -147,14 +147,23 @@ cache travado por teste.
 | 6 | Mensagem de RSI publica o **valor-alvo**, não o RSI calculado (`sendMessage(…, rsiAlvo, …)` cai no parâmetro chamado `rsi`) | Texto publicado é `"valor RSI < 80"` com 80 = alvo. Travado em teste como está |
 | 7 | JDK padrão da máquina é **25**; o projeto compila com `release 17` | Build precisa de `JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64`. Na F1 isso deixa de ser contorno e vira o alvo |
 
-### F1 — Java 21 ainda no Spring
+### F1 — Java 21 ainda no Spring — **CONCLUÍDA (21/08/2026)**
 
-Trocar `<java.version>17</java.version>` por `21` e subir o Lombok de 1.18.32 para
-1.18.34+ — o 1.18.32 não compila em 21. O Lombok ainda é necessário aqui: pela D4 ele
-só sai na F4, e um build quebrado por ferramenta de geração no meio da migração
-mistura duas causas.
+Duas linhas no `pom.xml`:
 
-Rodar a suíte da F0. Passo isolado de propósito: se algo quebrar aqui, é Java, não Quarkus.
+- `<java.version>` de `17` para `21`;
+- o Lombok em `annotationProcessorPaths`, que estava pinado em `1.18.32`
+  (não compila em 21), passa a usar `${lombok.version}` do
+  `spring-boot-starter-parent` — **1.18.38**, exatamente a versão que a
+  dependência já resolvia. O pin mantinha processador e biblioteca em versões
+  diferentes sem nenhum motivo.
+
+Resultado: 70 testes verdes, bytecode `major version 65`, jar empacotando normal.
+
+**Achado:** a suíte passa igual no JDK 21 e no JDK 25 (o padrão desta máquina),
+os dois compilando com `release 21`. O Lombok 1.18.38 aguenta o 25 — ou seja, o
+pin antigo era o único bloqueio real, não a versão do JDK instalado. Ainda assim,
+o build de referência é o 21: `JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64`.
 
 **Saída:** aplicação idêntica, rodando em 21.
 
