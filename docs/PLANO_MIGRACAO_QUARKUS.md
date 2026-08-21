@@ -76,7 +76,7 @@ bases      crypto_alerts, postgres, template0, template1
 | `RedisTemplate<String,Object>` + `RedisConfig` | `RedisDataSource` → `ValueCommands<String, EstrategiaCacheDTO>` (serialização Jackson nativa; a classe `RedisConfig` inteira some) |
 | `KafkaTemplate<String,String>` + `KafkaConfig` | `@Channel("estrategia") Emitter<String>` (a classe `KafkaConfig` inteira some) |
 | `spring-boot-starter-security` (tudo `permitAll`) | remover — nenhuma extensão de segurança |
-| `springdoc-openapi-starter-webmvc-ui` | `quarkus-smallrye-openapi` — as anotações `io.swagger.v3.oas.annotations.*` do controller ficam **iguais** |
+| `springdoc-openapi-starter-webmvc-ui` | `quarkus-smallrye-openapi` — e as anotações `io.swagger.v3.oas.annotations.*` **precisam virar** `org.eclipse.microprofile.openapi.annotations.*` |
 | `logback.xml` + `janino` | `quarkus.log.*` no `application.properties` (Quarkus usa JBoss Log Manager; logback.xml é ignorado) |
 | `spring-boot-devtools` | `./mvnw quarkus:dev` |
 | MapStruct `componentModel = "spring"` | `componentModel = MappingConstants.ComponentModel.JAKARTA_CDI` |
@@ -245,118 +245,76 @@ não precisa de senha, e prova o changelog do zero a cada execução.
 precisar da mesma `api.version` enquanto o Docker local for 29.x. Fora isso, Dev Services
 funciona nesta máquina — o bloqueio que este plano registrava não existe.
 
-### F3 — Esqueleto Quarkus
+### F3 + F4 — Quarkus — **CONCLUÍDAS (21/08/2026)**
 
-Novo `pom.xml` com `quarkus-bom 3.33.3` (mesma LTS do `trade/backend`) e extensões:
+As duas fases foram num commit só. **Não existe estado intermediário que compile:**
+trocar o `pom.xml` para Quarkus deixa todo código anotado com Spring quebrado até o
+port terminar. Um commit "F3" isolado seria um commit vermelho — pior que um commit
+grande.
 
-```
-quarkus-rest, quarkus-rest-jackson, quarkus-hibernate-orm, quarkus-jdbc-postgresql,
-quarkus-hibernate-validator, quarkus-liquibase, quarkus-redis-client,
-quarkus-messaging-kafka, quarkus-scheduler, quarkus-smallrye-openapi,
-quarkus-smallrye-context-propagation, quarkus-arc
-```
+**Build.** `quarkus-bom 3.33.3`, a mesma LTS do `trade/backend`. Saíram `spring-boot`,
+`spring-security`, `springdoc`, `logback`, `janino` e `lombok`. Entraram `quarkus-rest`,
+`hibernate-orm`, `jdbc-postgresql`, `hibernate-validator`, `liquibase`, `redis-client`,
+`messaging-kafka`, `scheduler`, `smallrye-openapi`, `smallrye-health` e
+`context-propagation`. MapStruct em 1.6.3 com `unmappedTargetPolicy=ERROR` e
+`defaultComponentModel=jakarta-cdi`.
 
-Fora: `spring-boot-*`, `spring-security-*`, `springdoc`, `janino`, `logback`,
-`mysql-connector-j`, `gson` (Jackson já cobre). `quarkus-maven-plugin` no lugar do
-`spring-boot-maven-plugin`; MapStruct sobe para 1.6.3 com
-`-Amapstruct.unmappedTargetPolicy=ERROR`, igual `trade/backend`.
+**Lombok saiu junto (D4).** DTOs, domínios e DTOs de erro viraram `record`. Entidades
+ganharam acessores explícitos e ficaram **sem `equals`/`hashCode`** — o `@Data` gerava
+os dois sobre o `id` mutável e sobre a coleção lazy `condicoes`, então comparar duas
+instâncias podia disparar carga e o hash mudava depois do `persist`. `@Slf4j` virou
+`LoggerFactory` do SLF4J: o Quarkus faz a ponte para o JBoss LogManager, então os
+`{}` dos logs seguem iguais — o que evitou reescrever dezenas de chamadas para `%s`.
 
-`config/application.properties` (hoje fora do classpath, carregado pela convenção do
-Spring) vira `src/main/resources/application.properties`, com indireção por env var e
-sem nenhum segredo versionado:
+**Classes que deixaram de existir:** `CryptoMonitorApplication`, `SecurityConfig` (era
+`permitAll` puro), `RedisConfig`, `KafkaConfig`, `ParametersProperties` e
+`CondicaoEstrategiaRepository`, que não era usado por ninguém.
 
-```properties
-quarkus.http.port=${CRYPTO_MONITOR_HTTP_PORT:8086}
-quarkus.http.root-path=/crypto-monitor
+#### O que não foi substituição mecânica
 
-quarkus.datasource.db-kind=postgresql
-quarkus.datasource.username=${DB_USER:admin}
-quarkus.datasource.password=${DB_PASSWORD:}
-quarkus.datasource.jdbc.url=${DATABASE_JDBC_URL:jdbc:postgresql://localhost:5432/crypto_monitor}
-
-quarkus.hibernate-orm.database.generation=none
-quarkus.hibernate-orm.schema-management.strategy=validate
-quarkus.liquibase.change-log=db/changelog/changelog-master.xml
-quarkus.liquibase.migrate-at-start=true
-
-mp.messaging.outgoing.estrategia.connector=smallrye-kafka
-mp.messaging.outgoing.estrategia.topic=strategy
-mp.messaging.outgoing.estrategia.value.serializer=org.apache.kafka.common.serialization.StringSerializer
-kafka.bootstrap.servers=${KAFKA_BOOTSTRAP_SERVERS:}
-
-quarkus.redis.hosts=${REDIS_URL:redis://localhost:6395}
-```
-
-`schema-management.strategy=validate` com `migrate-at-start=true`: o Liquibase é o dono
-do schema, o Hibernate só confere. Difere do `trade/backend`, onde o Liquibase está
-passivo porque o Alembic (Python) ainda manda — aqui não há segundo dono.
-
-A porta `8086` fecha a D6: `8080` é o dashboard do Traefik na VPS e `8085` é o kernel.
-O `root-path` preserva o `/crypto-monitor` que o `TradeFront` já chama.
-
-**Saída:** `./mvnw quarkus:dev` sobe, `/q/health` e `/q/openapi` respondem, Liquibase
-cria o schema em `crypto_monitor`. Sem regra de negócio ainda.
-
-### F4 — Portar por fatia vertical (framework + Lombok no mesmo passo)
-
-Cada classe é tocada uma vez só, resolvendo as duas coisas: anotação de framework e
-saída do Lombok. Ordem de dentro para fora, cada item compilando e com a suíte da F0
-verde antes do próximo.
-
-Padrão de substituição do Lombok:
-
-| Lombok | Vira |
+| Ponto | O que aconteceu |
 |---|---|
-| `@Data` / `@Getter` / `@Setter` em DTO | `record` com componentes finais |
-| `@Builder` em DTO | construtor canônico do `record` (ou `Builder` à mão onde há muitos campos opcionais) |
-| `@Data` em `@Entity` | acessores explícitos, **sem** `equals`/`hashCode` gerados |
-| `@AllArgsConstructor` / `@RequiredArgsConstructor` em bean | construtor explícito (injeção por construtor, PADRÕES §4) |
-| `@Slf4j` | `private static final Logger log = Logger.getLogger(X.class)` (JBoss Logging) |
-| `@Getter @AllArgsConstructor` em `enum` | construtor e acessor escritos à mão |
+| `TransactionSynchronizationManager` | Virou `TransactionSynchronizationRegistry` (JTA), com o efeito pós-commit condicionado a `Status.STATUS_COMMITTED`. Ganhou teste de rollback, que antes não existia |
+| **Anotações OpenAPI** | `io.swagger.v3` **não é reconhecido pelo Quarkus** — este plano dizia o contrário e estava errado. Migradas para `org.eclipse.microprofile.openapi`. O `@Operation` do MP não tem atributo `responses`, então as `@APIResponse` passaram para o método |
+| `MultiSymboPriceHandlerService` | Recebia um `Map` no construtor, que container nenhum injeta. Virou estado interno. A F0 tinha achado isso só no `WebSocketConnectionManager`; eram dois |
+| `WebSocketConnectionManager` / `WebSocketClient` | Perderam `@Component`. Sempre foram instanciados à mão; no ArC a anotação viraria erro de build. Os dois `@Value` de reconexão passaram a parâmetros de construtor, vindos de `@ConfigProperty` no `WebSocketServiceImpl` |
+| `KafkaTemplate` | Virou `Emitter` com `OutgoingKafkaRecordMetadata`, **preservando o tópico dinâmico por mensagem** em vez de fixá-lo no canal |
+| `RedisTemplate` | Virou `RedisDataSource` gravando String JSON explícita, para manter byte a byte o formato congelado na F0 |
+| Corpo do erro 400 | Passou a usar o caminho absoluto (`/crypto-monitor/estrategia`). É o que o `getRequestURI()` do Spring devolvia **em produção**; o teste da F0 rodava em MockMvc sem context-path e por isso registrou `/estrategia` |
+| MapStruct | Os 3 `Unmapped target properties` previstos na F0 quebraram o build, como esperado. Resolvidos com `@Mapping(ignore = true)` explícito em `id`, `dateCreated`, `dateLastUpdate` e `estrategia` |
 
-`@Data` em entidade JPA é armadilha conhecida: gera `equals`/`hashCode` sobre todos os
-campos, incluindo o `id` mutável e a coleção `condicoes` com `LAZY`. Em `Estrategia`
-isso significa que comparar duas instâncias pode disparar carga da coleção, e que o
-hash de uma entidade muda depois do `persist`. Ao sair do Lombok, **não recriar**:
-entidade sem `equals`/`hashCode`, ou por `id` apenas quando não nulo.
+#### Testes
 
-1. **Entidades** — JPA é o mesmo, só sai o Lombok e ajusta o `equals`/`hashCode` acima.
-2. **Repositórios** — `JpaRepository` some. `findByAtivo`, `findByAtivoFetchCondicoes`,
-   `save`, `deleteById`, `findById` viram métodos explícitos com `EntityManager` e
-   `TypedQuery`, nome derivado por fora. `findById` devolve `Optional` via
-   `getResultStream().findFirst()`.
-3. **Mappers** — `componentModel` para `JAKARTA_CDI`, MapStruct 1.6.3, e
-   `unmappedTargetPolicy=ERROR` ligado. Com os DTO virando `record`, o MapStruct passa a
-   usar o construtor canônico — é aqui que campo desalinhado quebra o build, que é o ponto.
-4. **Serviços** — `@ApplicationScoped`, `jakarta.transaction.@Transactional`.
-   `TransactionSynchronizationManager` (usado em `EstrategiaServiceImpl`) não existe no
-   Quarkus: equivalente é `TransactionSynchronizationRegistry` (JTA) ou um evento CDI
-   com `@Observes(during = AFTER_SUCCESS)`. **Ponto de atenção real — não é substituição
-   mecânica, e falha em silêncio se for portado errado.**
-5. **Infra** — Redis vira `RedisDataSource` → `ValueCommands<String, EstrategiaCacheDTO>`;
-   Kafka vira `@Channel("estrategia") Emitter<String>`. `RedisConfig` e `KafkaConfig` são
-   deletadas inteiras. `KafkaEnum.ESTRATEGIA("strategy")` é o único tópico e nunca há
-   consumo, então o canal fixo do Emitter cobre todo o uso atual — a assinatura
-   `sendMessage(String topic, ...)` pode perder o parâmetro `topic`.
-6. **Web** — controller para JAX-RS, `GlobalExceptionHandler` para `ExceptionMapper`.
-   Manter o corpo de erro (`ApiErrorResponse`) **byte a byte igual**, senão quebra o
-   `TradeFront`. Atenção: o Quarkus tem mapper próprio para violação de Bean Validation,
-   que devolve outro formato — o mapper customizado precisa ter prioridade.
-7. **Startup/agendamento** — `StartupScheduledTask` vira observador de `StartupEvent`;
-   `EstrategiaAsyncService` usa `ManagedExecutor`.
-8. **WebSocket** — a lib `Java-WebSocket` continua igual (não é Spring). Atenção:
-   `WebSocketConnectionManager` é `@Component` com construtor recebendo
-   `Map<String,List<String>>`, que nenhum container consegue injetar — hoje só funciona
-   porque é instanciado à mão. Na migração isso vira **erro de deployment do ArC**
-   (falha no build, não em runtime). Corrigir tornando-o objeto criado por fábrica,
-   não bean. Os dois `@Value` de reconexão passam a ser parâmetros da fábrica.
-9. **Validators** — Bean Validation puro, portam sem mudança; o registro dos
-   `ConstraintValidator` passa a ser via CDI.
-10. **`Constants`** — hoje é `@Configuration` sem nenhum bean, só constantes estáticas.
-    Perde a anotação e vira classe final com construtor privado.
+80 verdes. Dev Services sobe um `postgres:15` descartável para os `@QuarkusTest`; Redis e
+Kafka ficam com `devservices.enabled=false`, já que nenhum teste os exercita de verdade.
+O endereço do banco em produção ficou sob `%prod.`, porque Dev Services só liga quando a
+url está ausente.
 
-**Saída:** rotas idênticas ao Spring, zero Lombok no `pom.xml`, suíte portada para
-`@QuarkusTest` + REST Assured.
+`SchemaPostgresIT` virou `SchemaPostgresTest`: com Dev Services a suíte inteira já depende
+de Docker, então a separação surefire/failsafe montada na F2 deixou de significar algo — e
+o failsafe tinha ido embora junto com o pom do Spring, de modo que o IT não rodou em
+nenhuma das execuções até ser renomeado. Ganhou um teste a mais, travando que
+`condicoes_estrategia.valor` é `numeric(20,8)`.
+
+#### Verificação com o app de pé
+
+Empacotado e rodado contra o Postgres real:
+
+```
+CryptoMonitor 0.0.1-SNAPSHOT on JVM (powered by Quarkus 3.33.3) started in 4.104s
+Listening on: http://0.0.0.0:8086
+
+GET  /crypto-monitor/estrategia   -> 200 {"dados":{"estrategias":[]}}
+POST /crypto-monitor/estrategia   -> 400 {"timestamp":...,"status":400,"error":"Bad Request",
+                                          "errors":[...],"path":"/crypto-monitor/estrategia"}
+GET  /crypto-monitor/q/openapi    -> as 4 rotas
+GET  /crypto-monitor/q/health     -> banco UP, Redis DOWN (não há Redis rodando)
+```
+
+O `/q/health` fica sob o `root-path`, não na raiz. O erro de Redis na subida é registrado
+e **não derruba a aplicação** — mesmo comportamento da versão Spring.
+
+**Saída:** aplicação inteira em Quarkus, zero Spring, zero Lombok, 80 testes verdes.
 
 ### F5 — Paridade e corte
 
