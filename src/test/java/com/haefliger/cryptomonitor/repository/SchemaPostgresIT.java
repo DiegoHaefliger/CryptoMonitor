@@ -12,11 +12,14 @@ import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.TestPropertySource;
+import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,26 +29,19 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @TestPropertySource(properties = {
         "spring.liquibase.change-log=classpath:db/changelog/changelog-master.xml",
-        "spring.jpa.hibernate.ddl-auto=validate",
-        "spring.datasource.url=${DATABASE_JDBC_URL:jdbc:postgresql://localhost:5432/crypto_monitor}",
-        "spring.datasource.username=${DB_USER:admin}",
-        "spring.datasource.password=${DB_PASSWORD:}"
+        "spring.jpa.hibernate.ddl-auto=validate"
 })
-@EnabledIf("postgresDisponivel")
+@Testcontainers
+@EnabledIf("dockerDisponivel")
 @DisplayName("Schema no Postgres — Liquibase e mapeamento das entidades")
 class SchemaPostgresIT {
 
-    private static final String URL =
-            System.getenv().getOrDefault("DATABASE_JDBC_URL", "jdbc:postgresql://localhost:5432/crypto_monitor");
-    private static final String USUARIO = System.getenv().getOrDefault("DB_USER", "admin");
-    private static final String SENHA = System.getenv().getOrDefault("DB_PASSWORD", "");
+    @Container
+    @ServiceConnection
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15");
 
-    static boolean postgresDisponivel() {
-        try (Connection ignored = DriverManager.getConnection(URL, USUARIO, SENHA)) {
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+    static boolean dockerDisponivel() {
+        return DockerClientFactory.instance().isDockerAvailable();
     }
 
     @Autowired

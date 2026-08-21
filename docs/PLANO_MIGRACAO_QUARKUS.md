@@ -216,29 +216,34 @@ DB_PASSWORD=... ./mvnw -B verify     # 70 + 9, verde
 **Saída:** app Spring apontando para Postgres, schema criado do zero e validado.
 **Ponto de rollback seguro.**
 
-#### Achado que muda a F3: Testcontainers não enxerga o Docker desta máquina
+#### Testcontainers: era versão de API, não contexto do Docker
 
-A primeira versão do `SchemaPostgresIT` usava Testcontainers e falhou em três
-configurações diferentes, sempre com:
+A primeira leitura desta sessão culpou o contexto `desktop-linux` e a
+`DockerDesktopClientProviderStrategy`. **Diagnóstico errado.** Com o log completo, a
+primeira estratégia tentada mostra a causa real:
 
 ```
-Could not find a valid Docker environment. Please see logs and check configuration
+UnixSocketClientProviderStrategy: failed with exception BadRequestException (Status 400:
+{"message":"client version 1.32 is too old. Minimum supported API version is 1.40,
+ please upgrade your client to a newer version"})
 ```
 
-O Docker está no ar e os dois sockets respondem `200` em `/_ping` via HTTP comum
-(`/var/run/docker.sock` e `~/.docker/desktop/docker.sock`). Quem falha é a detecção de
-estratégia do Testcontainers: o contexto ativo é `desktop-linux`, e a
-`DockerDesktopClientProviderStrategy` recebe **HTTP 400** ao chamar `/info` no
-`docker-cli.sock`. Nem `DOCKER_HOST` explícito nem forçar
-`EnvironmentAndSystemPropertyClientProviderStrategy` resolveram.
+O daemon local é Docker **29.6.1**, com `ApiVersion 1.55` e **`MinAPIVersion 1.40`**. O
+docker-java embutido no Testcontainers 1.21.0 cai no default antigo **1.32** quando não
+negocia versão, e o daemon recusa. O socket sempre esteve acessível — por isso o
+`/_ping` respondia 200 e o `docker ps` funcionava.
 
-**Isso não é um detalhe de teste: o Quarkus Dev Services usa Testcontainers por baixo.**
-Enquanto isso não for resolvido, na F3/F4 não haverá banco automático em `quarkus:dev`
-nem em `@QuarkusTest` — vai ser preciso apontar para o Postgres real com
-`quarkus.datasource.*` explícito e `quarkus.devservices.enabled=false`.
+Correção: `api.version=1.44` como system property do failsafe, no `pom.xml`. Nada de
+`docker context use default`, que não teria resolvido.
 
-Caminho mais provável de correção, a rodar fora desta sessão:
-`docker context use default` (o socket `default` responde normalmente).
+Com isso o `SchemaPostgresIT` voltou a usar Testcontainers (`postgres:15` + `@ServiceConnection`),
+guardado por `DockerClientFactory.instance().isDockerAvailable()` para pular onde não há
+Docker. Vantagem sobre apontar para o banco local: roda contra uma base virgem toda vez,
+não precisa de senha, e prova o changelog do zero a cada execução.
+
+**Consequência para a F3:** o Quarkus Dev Services usa o mesmo Testcontainers, então vai
+precisar da mesma `api.version` enquanto o Docker local for 29.x. Fora isso, Dev Services
+funciona nesta máquina — o bloqueio que este plano registrava não existe.
 
 ### F3 — Esqueleto Quarkus
 
