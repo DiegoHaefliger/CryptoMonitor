@@ -120,4 +120,24 @@ class EstrategiaControllerTest {
                 .body("errors", hasSize(2))
                 .body("errors.defaultMessage", hasItem("Campo 'nome' não pode ser vazio"));
     }
+
+    @Test
+    @DisplayName("DELETE sem id devolve 400, não 500 — @QueryParam sozinho seria opcional, diferente do @RequestParam do Spring")
+    void deletarSemIdDevolve400() {
+        given().when().delete("/estrategia")
+                .then().statusCode(400)
+                .body("status", equalTo(400))
+                .body("error", equalTo("Bad Request"))
+                .body("errors.defaultMessage", hasItem("Campo 'id' não pode ser vazio"));
+    }
+
+    @Test
+    @DisplayName("PUT /status sem parâmetros aponta os três que faltaram")
+    void statusSemParametrosDevolve400() {
+        given().when().put("/estrategia/status")
+                .then().statusCode(400)
+                .body("errors.defaultMessage", hasItem("Campo 'id' não pode ser vazio"))
+                .body("errors.defaultMessage", hasItem("Campo 'ativo' não pode ser vazio"))
+                .body("errors.defaultMessage", hasItem("Campo 'permanente' não pode ser vazio"));
+    }
 }

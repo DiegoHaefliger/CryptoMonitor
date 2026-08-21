@@ -6,6 +6,7 @@ import com.haefliger.cryptomonitor.dto.response.estrategia.SalvarEstrategiaRespo
 import com.haefliger.cryptomonitor.exception.dto.ApiErrorResponse;
 import com.haefliger.cryptomonitor.service.EstrategiaService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -65,7 +66,8 @@ public class EstrategiaController {
     @APIResponse(responseCode = "400", description = ERRO_REQUISICAO_INVALIDA,
             content = @Content(mediaType = MediaType.APPLICATION_JSON,
                     schema = @Schema(implementation = ApiErrorResponse.class)))
-    public void deletarEstrategia(@QueryParam("id") Long id) {
+    public void deletarEstrategia(
+            @NotNull(message = "Campo 'id' não pode ser vazio") @QueryParam("id") Long id) {
         estrategiaService.deletarEstrategia(id);
     }
 
@@ -77,9 +79,10 @@ public class EstrategiaController {
     @APIResponse(responseCode = "400", description = ERRO_REQUISICAO_INVALIDA,
             content = @Content(mediaType = MediaType.APPLICATION_JSON,
                     schema = @Schema(implementation = ApiErrorResponse.class)))
-    public void statusEstrategia(@QueryParam("id") Long id,
-                                 @QueryParam("ativo") Boolean ativo,
-                                 @QueryParam("permanente") Boolean permanente) {
+    public void statusEstrategia(
+            @NotNull(message = "Campo 'id' não pode ser vazio") @QueryParam("id") Long id,
+            @NotNull(message = "Campo 'ativo' não pode ser vazio") @QueryParam("ativo") Boolean ativo,
+            @NotNull(message = "Campo 'permanente' não pode ser vazio") @QueryParam("permanente") Boolean permanente) {
         estrategiaService.statusEstrategia(id, ativo, permanente);
     }
 
