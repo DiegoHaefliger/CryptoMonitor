@@ -1,19 +1,8 @@
 version: '3.8'
 
+# O Postgres NAO fica aqui: e o container crypto_alerts_db, compartilhado com o
+# backend Java, onde o CryptoMonitor usa a base propria crypto_monitor.
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: my-mysql-db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: CryptoPools
-      MYSQL_USER: diego
-      MYSQL_PASSWORD: diego
-    ports:
-      - "3307:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
   redis:
     image: redis:7.2
     container_name: redis
@@ -24,5 +13,4 @@ services:
       - redis_data:/data
 
 volumes:
-  mysql_data:
   redis_data:
