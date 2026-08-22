@@ -23,7 +23,9 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.ResponseStatus;
 
-@Tag(name = "Estratégia", description = "Endpoints para manipular estratégias de monitoramento de criptomoedas")
+@Tag(
+        name = "Estratégia",
+        description = "Endpoints para manipular estratégias de monitoramento de criptomoedas")
 @Path("/estrategia")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -41,9 +43,13 @@ public class EstrategiaController {
     @ResponseStatus(201)
     @Operation(summary = "Salva uma nova estratégia", description = "Salva uma nova estratégia")
     @APIResponse(responseCode = "201", description = "Estratégia salva com sucesso")
-    @APIResponse(responseCode = "400", description = ERRO_REQUISICAO_INVALIDA,
-            content = @Content(mediaType = MediaType.APPLICATION_JSON,
-                    schema = @Schema(implementation = ApiErrorResponse.class)))
+    @APIResponse(
+            responseCode = "400",
+            description = ERRO_REQUISICAO_INVALIDA,
+            content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON,
+                            schema = @Schema(implementation = ApiErrorResponse.class)))
     public SalvarEstrategiaResponse salvarEstrategia(@Valid EstrategiaRequest estrategiaRequest) {
         return estrategiaService.salvarEstrategia(estrategiaRequest);
     }
@@ -52,9 +58,13 @@ public class EstrategiaController {
     @ResponseStatus(200)
     @Operation(summary = "Buscar estratégia", description = "Buscar estratégia existente")
     @APIResponse(responseCode = "200", description = "Estratégia retornada com sucesso")
-    @APIResponse(responseCode = "400", description = ERRO_REQUISICAO_INVALIDA,
-            content = @Content(mediaType = MediaType.APPLICATION_JSON,
-                    schema = @Schema(implementation = ApiErrorResponse.class)))
+    @APIResponse(
+            responseCode = "400",
+            description = ERRO_REQUISICAO_INVALIDA,
+            content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON,
+                            schema = @Schema(implementation = ApiErrorResponse.class)))
     public BuscarEstrategiaResponse buscarEstrategia(@QueryParam("ativo") Boolean ativo) {
         return estrategiaService.buscarEstrategia(ativo);
     }
@@ -63,9 +73,13 @@ public class EstrategiaController {
     @ResponseStatus(204)
     @Operation(summary = "Deletar estratégia", description = "Deleta uma estratégia existente")
     @APIResponse(responseCode = "204", description = "Estratégia deletada com sucesso")
-    @APIResponse(responseCode = "400", description = ERRO_REQUISICAO_INVALIDA,
-            content = @Content(mediaType = MediaType.APPLICATION_JSON,
-                    schema = @Schema(implementation = ApiErrorResponse.class)))
+    @APIResponse(
+            responseCode = "400",
+            description = ERRO_REQUISICAO_INVALIDA,
+            content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON,
+                            schema = @Schema(implementation = ApiErrorResponse.class)))
     public void deletarEstrategia(
             @NotNull(message = "Campo 'id' não pode ser vazio") @QueryParam("id") Long id) {
         estrategiaService.deletarEstrategia(id);
@@ -74,16 +88,23 @@ public class EstrategiaController {
     @PUT
     @Path("/status")
     @ResponseStatus(204)
-    @Operation(summary = "Ativar/Desativar estratégia", description = "Ativar/Desativar uma estratégia existente")
+    @Operation(
+            summary = "Ativar/Desativar estratégia",
+            description = "Ativar/Desativar uma estratégia existente")
     @APIResponse(responseCode = "204", description = "Estratégia Ativada/Desativada com sucesso")
-    @APIResponse(responseCode = "400", description = ERRO_REQUISICAO_INVALIDA,
-            content = @Content(mediaType = MediaType.APPLICATION_JSON,
-                    schema = @Schema(implementation = ApiErrorResponse.class)))
+    @APIResponse(
+            responseCode = "400",
+            description = ERRO_REQUISICAO_INVALIDA,
+            content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON,
+                            schema = @Schema(implementation = ApiErrorResponse.class)))
     public void statusEstrategia(
             @NotNull(message = "Campo 'id' não pode ser vazio") @QueryParam("id") Long id,
-            @NotNull(message = "Campo 'ativo' não pode ser vazio") @QueryParam("ativo") Boolean ativo,
-            @NotNull(message = "Campo 'permanente' não pode ser vazio") @QueryParam("permanente") Boolean permanente) {
+            @NotNull(message = "Campo 'ativo' não pode ser vazio") @QueryParam("ativo")
+                    Boolean ativo,
+            @NotNull(message = "Campo 'permanente' não pode ser vazio") @QueryParam("permanente")
+                    Boolean permanente) {
         estrategiaService.statusEstrategia(id, ativo, permanente);
     }
-
 }

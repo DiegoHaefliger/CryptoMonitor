@@ -1,4 +1,4 @@
 package com.haefliger.cryptomonitor.dto.response.estrategia;
 
-public record BuscarEstrategiaCondicaoResponse(String tipoIndicador, String operador, String valor) {
-}
+public record BuscarEstrategiaCondicaoResponse(
+        String tipoIndicador, String operador, String valor) {}

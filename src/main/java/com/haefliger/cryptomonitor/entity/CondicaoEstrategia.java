@@ -14,7 +14,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -103,7 +102,14 @@ public class CondicaoEstrategia implements Serializable {
 
     @Override
     public String toString() {
-        return "CondicaoEstrategia{id=" + id + ", tipoIndicador=" + tipoIndicador
-                + ", operador=" + operador + ", valor=" + valor + "}";
+        return "CondicaoEstrategia{id="
+                + id
+                + ", tipoIndicador="
+                + tipoIndicador
+                + ", operador="
+                + operador
+                + ", valor="
+                + valor
+                + "}";
     }
 }

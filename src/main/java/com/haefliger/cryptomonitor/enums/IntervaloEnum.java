@@ -37,10 +37,11 @@ public enum IntervaloEnum {
     public static String valoresValidos() {
         StringBuilder sb = new StringBuilder();
         for (IntervaloEnum intervalo : values()) {
-            if (!sb.isEmpty()) sb.append(", ");
+            if (!sb.isEmpty()) {
+                sb.append(", ");
+            }
             sb.append(intervalo.getValor());
         }
         return sb.toString();
     }
-
 }

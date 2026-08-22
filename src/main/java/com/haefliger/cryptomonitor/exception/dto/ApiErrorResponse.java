@@ -8,5 +8,4 @@ public record ApiErrorResponse(
         Integer status,
         String error,
         List<ApiErrorDetailResponse> errors,
-        String path) {
-}
+        String path) {}

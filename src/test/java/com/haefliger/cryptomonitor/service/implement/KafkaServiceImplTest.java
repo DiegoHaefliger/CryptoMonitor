@@ -1,8 +1,14 @@
 package com.haefliger.cryptomonitor.service.implement;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
 import io.smallrye.reactive.messaging.kafka.api.OutgoingKafkaRecordMetadata;
+import java.util.Map;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.junit.jupiter.api.DisplayName;
@@ -12,19 +18,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-
 @ExtendWith(MockitoExtension.class)
 @DisplayName("KafkaServiceImpl — caracterização do tópico, chave e corpo publicados")
 class KafkaServiceImplTest {
 
-    @Mock
-    private Emitter<String> emitter;
+    @Mock private Emitter<String> emitter;
 
     private KafkaServiceImpl service() {
         return new KafkaServiceImpl(emitter, new ObjectMapper());
@@ -38,9 +36,8 @@ class KafkaServiceImplTest {
     }
 
     private static void assertTopicoEChave(Message<String> mensagem, String topico, String chave) {
-        OutgoingKafkaRecordMetadata<?> metadata = mensagem
-                .getMetadata(OutgoingKafkaRecordMetadata.class)
-                .orElseThrow();
+        OutgoingKafkaRecordMetadata<?> metadata =
+                mensagem.getMetadata(OutgoingKafkaRecordMetadata.class).orElseThrow();
         assertThat(metadata.getTopic()).isEqualTo(topico);
         assertThat(metadata.getKey()).isEqualTo(chave);
     }
@@ -58,12 +55,15 @@ class KafkaServiceImplTest {
 
     @Test
     void sendMessageEstrategiasRsi() {
-        service().sendMessageEstrategias(TipoIndicadorEnum.RSI, new String[] {"BTCUSDT", "< 80", "60m"});
+        service()
+                .sendMessageEstrategias(
+                        TipoIndicadorEnum.RSI, new String[] {"BTCUSDT", "< 80", "60m"});
 
         Message<String> mensagem = mensagemPublicada();
         assertTopicoEChave(mensagem, "strategy", "RSI");
         assertThat(mensagem.getPayload())
-                .isEqualTo("🏆 Estratégia de RSI acionada para o ativo BTCUSDT valor RSI < 80 intervalo 60m");
+                .isEqualTo(
+                        "🏆 Estratégia de RSI acionada para o ativo BTCUSDT valor RSI < 80 intervalo 60m");
     }
 
     @Test
@@ -75,7 +75,8 @@ class KafkaServiceImplTest {
     }
 
     @Test
-    @DisplayName("o tópico continua sendo parâmetro em runtime, sobrescrito por metadata da mensagem")
+    @DisplayName(
+            "o tópico continua sendo parâmetro em runtime, sobrescrito por metadata da mensagem")
     void sendMessageSerializaObjetoComoJson() {
         service().sendMessage("qualquer", "chave", Map.of("a", 1));
 
@@ -85,7 +86,8 @@ class KafkaServiceImplTest {
     }
 
     @Test
-    @DisplayName("tópico, chave ou objeto nulo viram RuntimeException, não IllegalArgumentException")
+    @DisplayName(
+            "tópico, chave ou objeto nulo viram RuntimeException, não IllegalArgumentException")
     void validacaoDeEntrada() {
         assertThatThrownBy(() -> service().sendMessage(null, "chave", "x"))
                 .isInstanceOf(RuntimeException.class)

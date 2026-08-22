@@ -37,7 +37,9 @@ public enum OperadorComparacaoEnum {
     public static String valoresValidos() {
         StringBuilder sb = new StringBuilder();
         for (OperadorComparacaoEnum op : values()) {
-            if (!sb.isEmpty()) sb.append(", ");
+            if (!sb.isEmpty()) {
+                sb.append(", ");
+            }
             sb.append(op.getSimbolo());
         }
         return sb.toString();

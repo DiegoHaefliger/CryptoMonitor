@@ -3,7 +3,6 @@ package com.haefliger.cryptomonitor.validation;
 import com.haefliger.cryptomonitor.validation.validator.NotEmptyWithFieldMessageValidator;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
-
 import java.lang.annotation.*;
 
 @Documented

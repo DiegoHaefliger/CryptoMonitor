@@ -1,5 +1,8 @@
 package com.haefliger.cryptomonitor.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.haefliger.cryptomonitor.entity.CondicaoEstrategia;
 import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.enums.OperadorComparacaoEnum;
@@ -9,24 +12,18 @@ import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @DisplayName("Schema no Postgres — Liquibase e mapeamento das entidades")
 class SchemaPostgresTest {
 
-    @Inject
-    EntityManager em;
+    @Inject EntityManager em;
 
-    @Inject
-    EstrategiaRepository estrategiaRepository;
+    @Inject EstrategiaRepository estrategiaRepository;
 
     private static Estrategia comCondicao() {
         Estrategia estrategia = new Estrategia();
@@ -52,9 +49,10 @@ class SchemaPostgresTest {
     @DisplayName("Liquibase cria as duas tabelas e o Hibernate valida o mapeamento contra elas")
     void schemaCriadoEValidado() {
         @SuppressWarnings("unchecked")
-        List<String> tabelas = em.createNativeQuery(
-                        "select table_name from information_schema.tables where table_schema = 'public'")
-                .getResultList();
+        List<String> tabelas =
+                em.createNativeQuery(
+                                "select table_name from information_schema.tables where table_schema = 'public'")
+                        .getResultList();
 
         assertThat(tabelas).contains("estrategias", "condicoes_estrategia", "databasechangelog");
     }
@@ -64,12 +62,14 @@ class SchemaPostgresTest {
     @DisplayName("colunas booleanas nascem BOOLEAN nativo, não TINYINT como era no MySQL")
     void colunasBooleanas() {
         @SuppressWarnings("unchecked")
-        List<Object[]> colunas = em.createNativeQuery(
-                        "select column_name, data_type from information_schema.columns"
-                                + " where table_name = 'estrategias' and column_name in ('ativo', 'permanente')")
-                .getResultList();
+        List<Object[]> colunas =
+                em.createNativeQuery(
+                                "select column_name, data_type from information_schema.columns"
+                                        + " where table_name = 'estrategias' and column_name in ('ativo', 'permanente')")
+                        .getResultList();
 
-        assertThat(colunas).hasSize(2)
+        assertThat(colunas)
+                .hasSize(2)
                 .allSatisfy(coluna -> assertThat(coluna[1]).isEqualTo("boolean"));
     }
 
@@ -77,10 +77,12 @@ class SchemaPostgresTest {
     @TestTransaction
     @DisplayName("valor é numeric(20,8), não o text que o changelog criava antes da F2")
     void tipoDaColunaValor() {
-        Object[] coluna = (Object[]) em.createNativeQuery(
-                        "select data_type, numeric_precision, numeric_scale from information_schema.columns"
-                                + " where table_name = 'condicoes_estrategia' and column_name = 'valor'")
-                .getSingleResult();
+        Object[] coluna =
+                (Object[])
+                        em.createNativeQuery(
+                                        "select data_type, numeric_precision, numeric_scale from information_schema.columns"
+                                                + " where table_name = 'condicoes_estrategia' and column_name = 'valor'")
+                                .getSingleResult();
 
         assertThat(coluna[0]).isEqualTo("numeric");
         assertThat(((Number) coluna[1]).intValue()).isEqualTo(20);
@@ -106,12 +108,14 @@ class SchemaPostgresTest {
         em.flush();
         em.clear();
 
-        Object[] linha = (Object[]) em.createNativeQuery(
-                        "select e.operador_logico, c.tipo_indicador, c.operador"
-                                + " from estrategias e join condicoes_estrategia c on c.estrategia_id = e.id"
-                                + " where e.id = :id")
-                .setParameter("id", salva.getId())
-                .getSingleResult();
+        Object[] linha =
+                (Object[])
+                        em.createNativeQuery(
+                                        "select e.operador_logico, c.tipo_indicador, c.operador"
+                                                + " from estrategias e join condicoes_estrategia c on c.estrategia_id = e.id"
+                                                + " where e.id = :id")
+                                .setParameter("id", salva.getId())
+                                .getSingleResult();
 
         assertThat(linha).containsExactly("AND", "RSI", "MENOR_IGUAL");
     }
@@ -124,7 +128,8 @@ class SchemaPostgresTest {
         em.flush();
         em.clear();
 
-        CondicaoEstrategia lida = em.find(CondicaoEstrategia.class, salva.getCondicoes().get(0).getId());
+        CondicaoEstrategia lida =
+                em.find(CondicaoEstrategia.class, salva.getCondicoes().get(0).getId());
 
         assertThat(lida.getValor()).isEqualByComparingTo("30.12345678");
         assertThat(lida.getValor().scale()).isEqualTo(8);
@@ -145,13 +150,15 @@ class SchemaPostgresTest {
     @TestTransaction
     @DisplayName("o CHECK de operador_logico continua valendo no Postgres")
     void checkDeOperadorLogico() {
-        assertThatThrownBy(() -> {
-            em.createNativeQuery(
-                            "insert into estrategias (nome, simbolo, intervalo, operador_logico, ativo, permanente, date_created)"
-                                    + " values ('x', 'BTCUSDT', '60', 'XOR', true, false, now())")
-                    .executeUpdate();
-            em.flush();
-        }).hasMessageContaining("chk_operador_logico");
+        assertThatThrownBy(
+                        () -> {
+                            em.createNativeQuery(
+                                            "insert into estrategias (nome, simbolo, intervalo, operador_logico, ativo, permanente, date_created)"
+                                                    + " values ('x', 'BTCUSDT', '60', 'XOR', true, false, now())")
+                                    .executeUpdate();
+                            em.flush();
+                        })
+                .hasMessageContaining("chk_operador_logico");
     }
 
     @Test
@@ -166,10 +173,12 @@ class SchemaPostgresTest {
                 .setParameter("id", salva.getId())
                 .executeUpdate();
 
-        Number restantes = (Number) em.createNativeQuery(
-                        "select count(*) from condicoes_estrategia where estrategia_id = :id")
-                .setParameter("id", salva.getId())
-                .getSingleResult();
+        Number restantes =
+                (Number)
+                        em.createNativeQuery(
+                                        "select count(*) from condicoes_estrategia where estrategia_id = :id")
+                                .setParameter("id", salva.getId())
+                                .getSingleResult();
 
         assertThat(restantes.intValue()).isZero();
     }

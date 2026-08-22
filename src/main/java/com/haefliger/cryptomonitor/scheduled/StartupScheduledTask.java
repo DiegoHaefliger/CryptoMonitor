@@ -25,8 +25,8 @@ public class StartupScheduledTask {
             estrategiaAsyncService.atualizaEstrategiasWS();
         } catch (Exception e) {
             log.error("Falha ao iniciar agendamento de estratégia do Web Socket");
-            throw new ServiceException("Falha ao iniciar agendamento de estratégia do Web Socket", e);
+            throw new ServiceException(
+                    "Falha ao iniciar agendamento de estratégia do Web Socket", e);
         }
     }
-
 }

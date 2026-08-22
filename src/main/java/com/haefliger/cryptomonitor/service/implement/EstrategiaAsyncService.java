@@ -20,13 +20,17 @@ public class EstrategiaAsyncService {
     }
 
     public void atualizaEstrategiasWS() {
-        executor.execute(() -> {
-            try {
-                log.info("Atualizando estratégias via WebSocket de forma assíncrona");
-                webSocketService.atualizaEstrategiasWS();
-            } catch (Exception e) {
-                log.error("Erro ao atualizar estratégias via WebSocket: {}", e.getMessage(), e);
-            }
-        });
+        executor.execute(
+                () -> {
+                    try {
+                        log.info("Atualizando estratégias via WebSocket de forma assíncrona");
+                        webSocketService.atualizaEstrategiasWS();
+                    } catch (Exception e) {
+                        log.error(
+                                "Erro ao atualizar estratégias via WebSocket: {}",
+                                e.getMessage(),
+                                e);
+                    }
+                });
     }
 }

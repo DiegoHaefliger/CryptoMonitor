@@ -12,10 +12,9 @@ import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 @ApplicationScoped
 public class RedisServiceImpl implements RedisService {
@@ -29,11 +28,12 @@ public class RedisServiceImpl implements RedisService {
     private final EstrategiaCacheMapper estrategiaCacheMapper;
     private final ObjectMapper objectMapper;
 
-    RedisServiceImpl(RedisDataSource redisDataSource,
-                     RedisKeysProperties redisKeys,
-                     EstrategiaRepository repository,
-                     EstrategiaCacheMapper estrategiaCacheMapper,
-                     ObjectMapper objectMapper) {
+    RedisServiceImpl(
+            RedisDataSource redisDataSource,
+            RedisKeysProperties redisKeys,
+            EstrategiaRepository repository,
+            EstrategiaCacheMapper estrategiaCacheMapper,
+            ObjectMapper objectMapper) {
         this.valueCommands = redisDataSource.value(String.class, String.class);
         this.keyCommands = redisDataSource.key(String.class);
         this.redisKeys = redisKeys;
@@ -45,7 +45,8 @@ public class RedisServiceImpl implements RedisService {
     @Override
     public void salvarEstrategiasAtivasRedis(List<EstrategiaCacheDTO> estrategias) {
         try {
-            valueCommands.set(redisKeys.estrategiasAtivas(), objectMapper.writeValueAsString(estrategias));
+            valueCommands.set(
+                    redisKeys.estrategiasAtivas(), objectMapper.writeValueAsString(estrategias));
             log.info("Estrategias ativas salvas no Redis: {}", estrategias.size());
         } catch (Exception e) {
             log.error("Erro ao salvar estratégias ativas no Redis: {}", e.getMessage(), e);
@@ -75,10 +76,11 @@ public class RedisServiceImpl implements RedisService {
             return List.of();
         }
         try {
-            return objectMapper.readValue(cru, new TypeReference<List<EstrategiaCacheDTO>>() {
-            });
+            return objectMapper.readValue(cru, new TypeReference<List<EstrategiaCacheDTO>>() {});
         } catch (Exception e) {
-            log.error("Cache de estratégias ativas ilegível, caindo para o banco: {}", e.getMessage());
+            log.error(
+                    "Cache de estratégias ativas ilegível, caindo para o banco: {}",
+                    e.getMessage());
             return List.of();
         }
     }

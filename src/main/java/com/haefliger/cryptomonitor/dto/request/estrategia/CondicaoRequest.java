@@ -8,16 +8,10 @@ import com.haefliger.cryptomonitor.validation.TipoIndicadorValido;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 public record CondicaoRequest(
-
-        @Schema(description = "Tipo de indicador", example = "RSI")
-        @TipoIndicadorValido
-        TipoIndicadorEnum tipoIndicador,
-
-        @Schema(description = "Operação lógica", example = "<")
-        @OperadorComparacaoValido
-        OperadorComparacaoEnum operador,
-
+        @Schema(description = "Tipo de indicador", example = "RSI") @TipoIndicadorValido
+                TipoIndicadorEnum tipoIndicador,
+        @Schema(description = "Operação lógica", example = "<") @OperadorComparacaoValido
+                OperadorComparacaoEnum operador,
         @Schema(description = "Valor do operador", example = "30")
-        @NotEmptyWithFieldMessage(fieldName = "valor")
-        Integer valor) {
-}
+                @NotEmptyWithFieldMessage(fieldName = "valor")
+                Integer valor) {}

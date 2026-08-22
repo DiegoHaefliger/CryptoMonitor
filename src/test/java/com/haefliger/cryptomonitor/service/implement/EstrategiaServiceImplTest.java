@@ -1,5 +1,16 @@
 package com.haefliger.cryptomonitor.service.implement;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.haefliger.cryptomonitor.dto.request.estrategia.CondicaoRequest;
 import com.haefliger.cryptomonitor.dto.request.estrategia.EstrategiaRequest;
 import com.haefliger.cryptomonitor.dto.response.estrategia.BuscarEstrategiaResponse;
@@ -15,6 +26,10 @@ import com.haefliger.cryptomonitor.service.RedisService;
 import jakarta.transaction.Status;
 import jakarta.transaction.Synchronization;
 import jakarta.transaction.TransactionSynchronizationRegistry;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 import org.hibernate.service.spi.ServiceException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,45 +39,28 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 @DisplayName("EstrategiaServiceImpl — caracterização do comportamento atual")
 class EstrategiaServiceImplTest {
 
-    @Mock
-    private EstrategiaRepository repository;
-    @Mock
-    private EstrategiaMapper mapper;
-    @Mock
-    private RedisService redisService;
-    @Mock
-    private EstrategiaAsyncService estrategiaAsyncService;
-    @Mock
-    private TransactionSynchronizationRegistry transactionRegistry;
+    @Mock private EstrategiaRepository repository;
+    @Mock private EstrategiaMapper mapper;
+    @Mock private RedisService redisService;
+    @Mock private EstrategiaAsyncService estrategiaAsyncService;
+    @Mock private TransactionSynchronizationRegistry transactionRegistry;
 
-    @InjectMocks
-    private EstrategiaServiceImpl service;
+    @InjectMocks private EstrategiaServiceImpl service;
 
     private static EstrategiaRequest request() {
         CondicaoRequest condicao =
                 new CondicaoRequest(TipoIndicadorEnum.RSI, OperadorComparacaoEnum.MENOR, 30);
-        return new EstrategiaRequest("Bitcoin RSI", "BTCUSDT", "60",
-                OperadorLogicoEnum.AND, Boolean.FALSE, List.of(condicao));
+        return new EstrategiaRequest(
+                "Bitcoin RSI",
+                "BTCUSDT",
+                "60",
+                OperadorLogicoEnum.AND,
+                Boolean.FALSE,
+                List.of(condicao));
     }
 
     private static Estrategia entidade(Long id) {
@@ -84,7 +82,8 @@ class EstrategiaServiceImplTest {
     }
 
     @Test
-    @DisplayName("salvar mapeia a request com ativo=true, liga cada condição à estratégia e devolve o id")
+    @DisplayName(
+            "salvar mapeia a request com ativo=true, liga cada condição à estratégia e devolve o id")
     void salvarEstrategia() {
         Estrategia mapeada = entidade(null);
         CondicaoEstrategia condicao = new CondicaoEstrategia();
@@ -95,7 +94,8 @@ class EstrategiaServiceImplTest {
         when(mapper.requestToEntityEstrategia(any(), eq(Boolean.TRUE))).thenReturn(mapeada);
         when(mapper.requestToEntityCondicaoEstrategia(anyList())).thenReturn(List.of(condicao));
         when(repository.save(mapeada)).thenReturn(entidade(7L));
-        when(mapper.longToSalvarEstrategiaResponse(7L)).thenReturn(new SalvarEstrategiaResponse(7L));
+        when(mapper.longToSalvarEstrategiaResponse(7L))
+                .thenReturn(new SalvarEstrategiaResponse(7L));
 
         SalvarEstrategiaResponse resposta = service.salvarEstrategia(request());
 
@@ -203,11 +203,13 @@ class EstrategiaServiceImplTest {
     }
 
     @Test
-    @DisplayName("sem transação ativa, registrar a sincronização estoura e a operação inteira falha")
+    @DisplayName(
+            "sem transação ativa, registrar a sincronização estoura e a operação inteira falha")
     void semTransacaoAtivaFalha() {
         when(repository.findById(3L)).thenReturn(Optional.of(entidade(3L)));
         doThrow(new IllegalStateException("Transaction is not active"))
-                .when(transactionRegistry).registerInterposedSynchronization(any());
+                .when(transactionRegistry)
+                .registerInterposedSynchronization(any());
 
         assertThatThrownBy(() -> service.statusEstrategia(3L, Boolean.TRUE, Boolean.FALSE))
                 .isInstanceOf(ServiceException.class)

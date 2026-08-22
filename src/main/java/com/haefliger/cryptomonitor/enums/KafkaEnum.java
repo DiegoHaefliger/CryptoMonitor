@@ -3,7 +3,6 @@ package com.haefliger.cryptomonitor.enums;
 import java.util.Arrays;
 
 public enum KafkaEnum {
-
     ESTRATEGIA("strategy");
 
     private final String topic;
@@ -22,5 +21,4 @@ public enum KafkaEnum {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Unknown topic: " + topic));
     }
-
 }

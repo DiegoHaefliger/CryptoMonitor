@@ -1,11 +1,22 @@
 package com.haefliger.cryptomonitor.strategy;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
 import com.haefliger.cryptomonitor.entity.CondicaoEstrategia;
 import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.enums.OperadorComparacaoEnum;
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
 import com.haefliger.cryptomonitor.service.KafkaService;
 import com.haefliger.cryptomonitor.strategy.domain.PrecoSimboloDomain;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,35 +25,23 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.IntStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-
 @ExtendWith(MockitoExtension.class)
 @DisplayName("EstrategiaRSI — caracterização do comportamento atual")
 class EstrategiaRSITest {
 
     private static final double TOLERANCIA = 1e-9;
 
-    @Mock
-    private KafkaService kafkaService;
+    @Mock private KafkaService kafkaService;
 
-    @InjectMocks
-    private EstrategiaRSI estrategiaRSI;
+    @InjectMocks private EstrategiaRSI estrategiaRSI;
 
     private static List<PrecoSimboloDomain> serie(double... precos) {
         Instant base = Instant.parse("2026-01-01T00:00:00Z");
         return IntStream.range(0, precos.length)
-                .mapToObj(i -> new PrecoSimboloDomain(
-                        BigDecimal.valueOf(precos[i]), base.plusSeconds(60L * i)))
+                .mapToObj(
+                        i ->
+                                new PrecoSimboloDomain(
+                                        BigDecimal.valueOf(precos[i]), base.plusSeconds(60L * i)))
                 .toList();
     }
 
@@ -56,8 +55,10 @@ class EstrategiaRSITest {
         List<Double> rsi = estrategiaRSI.calcularRSI(serie(SERIE_MISTA));
 
         assertThat(rsi).hasSize(2);
-        assertThat(rsi.get(0)).isCloseTo(81.8005599828, org.assertj.core.data.Offset.offset(TOLERANCIA));
-        assertThat(rsi.get(1)).isCloseTo(78.2435066479, org.assertj.core.data.Offset.offset(TOLERANCIA));
+        assertThat(rsi.get(0))
+                .isCloseTo(81.8005599828, org.assertj.core.data.Offset.offset(TOLERANCIA));
+        assertThat(rsi.get(1))
+                .isCloseTo(78.2435066479, org.assertj.core.data.Offset.offset(TOLERANCIA));
     }
 
     @Test
@@ -77,7 +78,8 @@ class EstrategiaRSITest {
         List<Double> rsi = estrategiaRSI.calcularRSI(serie(quinze));
 
         assertThat(rsi.get(0)).isEqualTo(rsi.get(1));
-        assertThat(rsi.get(0)).isCloseTo(78.2608695652, org.assertj.core.data.Offset.offset(TOLERANCIA));
+        assertThat(rsi.get(0))
+                .isCloseTo(78.2608695652, org.assertj.core.data.Offset.offset(TOLERANCIA));
     }
 
     @Test
@@ -106,14 +108,17 @@ class EstrategiaRSITest {
     }
 
     @Test
-    @DisplayName("dispara quando o alvo satisfazia o operador no RSI anterior e deixa de satisfazer no atual")
+    @DisplayName(
+            "dispara quando o alvo satisfazia o operador no RSI anterior e deixa de satisfazer no atual")
     void disparaNaTransicaoDoOperador() {
         Estrategia estrategia = estrategiaComCondicao(OperadorComparacaoEnum.MENOR, 80);
 
         estrategiaRSI.analisar(serie(SERIE_MISTA), "BTCUSDT-60", List.of(estrategia));
 
         ArgumentCaptor<String[]> captor = ArgumentCaptor.forClass(String[].class);
-        verify(kafkaService).sendMessageEstrategias(org.mockito.ArgumentMatchers.eq(TipoIndicadorEnum.RSI), captor.capture());
+        verify(kafkaService)
+                .sendMessageEstrategias(
+                        org.mockito.ArgumentMatchers.eq(TipoIndicadorEnum.RSI), captor.capture());
         assertThat(captor.getValue()).containsExactly("BTCUSDT", "< 80", "60m");
     }
 
@@ -136,9 +141,12 @@ class EstrategiaRSITest {
         Estrategia condicaoNula = new Estrategia();
         condicaoNula.setNome("nula");
 
-        estrategiaRSI.analisar(serie(SERIE_MISTA), "BTCUSDT-60", List.of(semCondicao, condicaoNula));
+        estrategiaRSI.analisar(
+                serie(SERIE_MISTA), "BTCUSDT-60", List.of(semCondicao, condicaoNula));
 
-        verify(kafkaService, never()).sendMessageEstrategias(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        verify(kafkaService, never())
+                .sendMessageEstrategias(
+                        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test

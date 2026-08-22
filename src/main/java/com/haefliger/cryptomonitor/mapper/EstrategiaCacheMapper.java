@@ -4,11 +4,10 @@ import com.haefliger.cryptomonitor.dto.cache.CondicaoEstrategiaCacheDTO;
 import com.haefliger.cryptomonitor.dto.cache.EstrategiaCacheDTO;
 import com.haefliger.cryptomonitor.entity.CondicaoEstrategia;
 import com.haefliger.cryptomonitor.entity.Estrategia;
+import java.util.List;
 import org.mapstruct.CollectionMappingStrategy;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-
-import java.util.List;
 
 @Mapper(collectionMappingStrategy = CollectionMappingStrategy.ADDER_PREFERRED)
 public interface EstrategiaCacheMapper {

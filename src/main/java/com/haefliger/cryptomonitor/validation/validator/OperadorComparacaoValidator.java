@@ -5,18 +5,18 @@ import com.haefliger.cryptomonitor.validation.OperadorComparacaoValido;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
-public class OperadorComparacaoValidator implements ConstraintValidator<OperadorComparacaoValido, OperadorComparacaoEnum> {
+public class OperadorComparacaoValidator
+        implements ConstraintValidator<OperadorComparacaoValido, OperadorComparacaoEnum> {
     @Override
     public boolean isValid(OperadorComparacaoEnum value, ConstraintValidatorContext context) {
-        if (value == null ||  !OperadorComparacaoEnum.isValid(value)) {
+        if (value == null || !OperadorComparacaoEnum.isValid(value)) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate(
-                    "Operador inválido. Valores válidos: " + OperadorComparacaoEnum.valoresValidos()
-            ).addConstraintViolation();
+                            "Operador inválido. Valores válidos: "
+                                    + OperadorComparacaoEnum.valoresValidos())
+                    .addConstraintViolation();
             return false;
         }
         return true;
     }
-
 }
-

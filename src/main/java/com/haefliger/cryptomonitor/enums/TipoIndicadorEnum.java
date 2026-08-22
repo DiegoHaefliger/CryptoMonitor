@@ -1,7 +1,6 @@
 package com.haefliger.cryptomonitor.enums;
 
 public enum TipoIndicadorEnum {
-
     PRECO,
     RSI,
     MEDIA_MOVEL;
@@ -18,10 +17,11 @@ public enum TipoIndicadorEnum {
     public static String valoresValidos() {
         StringBuilder sb = new StringBuilder();
         for (TipoIndicadorEnum tipo : values()) {
-            if (!sb.isEmpty()) sb.append(", ");
+            if (!sb.isEmpty()) {
+                sb.append(", ");
+            }
             sb.append(tipo.name());
         }
         return sb.toString();
     }
 }
-

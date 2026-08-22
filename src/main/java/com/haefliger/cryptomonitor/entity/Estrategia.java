@@ -12,7 +12,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -148,8 +147,20 @@ public class Estrategia implements Serializable {
 
     @Override
     public String toString() {
-        return "Estrategia{id=" + id + ", nome=" + nome + ", simbolo=" + simbolo
-                + ", intervalo=" + intervalo + ", operadorLogico=" + operadorLogico
-                + ", ativo=" + ativo + ", permanente=" + permanente + "}";
+        return "Estrategia{id="
+                + id
+                + ", nome="
+                + nome
+                + ", simbolo="
+                + simbolo
+                + ", intervalo="
+                + intervalo
+                + ", operadorLogico="
+                + operadorLogico
+                + ", ativo="
+                + ativo
+                + ", permanente="
+                + permanente
+                + "}";
     }
 }

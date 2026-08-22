@@ -14,5 +14,5 @@ public record EstrategiaCacheDTO(
         LocalDateTime dateLastUpdate,
         Boolean ativo,
         Boolean permanente,
-        List<CondicaoEstrategiaCacheDTO> condicoes) implements Serializable {
-}
+        List<CondicaoEstrategiaCacheDTO> condicoes)
+        implements Serializable {}

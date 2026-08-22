@@ -2,8 +2,7 @@ package com.haefliger.cryptomonitor.utils;
 
 public final class Formatter {
 
-    private Formatter() {
-    }
+    private Formatter() {}
 
     public static String formatInterval(String input) {
         if (input != null && input.matches(".*[a-zA-Z].*")) {
@@ -11,5 +10,4 @@ public final class Formatter {
         }
         return input == null ? null : input + "m";
     }
-
 }

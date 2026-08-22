@@ -6,12 +6,11 @@ import com.haefliger.cryptomonitor.service.RedisService;
 import com.haefliger.cryptomonitor.ws.WebSocketConnectionManager;
 import com.haefliger.cryptomonitor.ws.service.WebSocketService;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.util.List;
+import java.util.Map;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
-import java.util.Map;
 
 @ApplicationScoped
 public class WebSocketServiceImpl implements WebSocketService {
@@ -26,11 +25,14 @@ public class WebSocketServiceImpl implements WebSocketService {
 
     private WebSocketConnectionManager wsManager;
 
-    WebSocketServiceImpl(MultiSymboPriceHandlerService handler,
-                         EstrategiaWebSocketMapper estrategiaWebSocketMapper,
-                         RedisService redisService,
-                         @ConfigProperty(name = "websocket.max-reconnect-attempts", defaultValue = "10") int maxReconnectAttempts,
-                         @ConfigProperty(name = "websocket.base-reconnect-delay-seconds", defaultValue = "5") int baseReconnectDelaySeconds) {
+    WebSocketServiceImpl(
+            MultiSymboPriceHandlerService handler,
+            EstrategiaWebSocketMapper estrategiaWebSocketMapper,
+            RedisService redisService,
+            @ConfigProperty(name = "websocket.max-reconnect-attempts", defaultValue = "10")
+                    int maxReconnectAttempts,
+            @ConfigProperty(name = "websocket.base-reconnect-delay-seconds", defaultValue = "5")
+                    int baseReconnectDelaySeconds) {
         this.handler = handler;
         this.estrategiaWebSocketMapper = estrategiaWebSocketMapper;
         this.redisService = redisService;
@@ -42,8 +44,12 @@ public class WebSocketServiceImpl implements WebSocketService {
     public synchronized void conect(Map<String, List<String>> symbolIntervals) {
         try {
             if (wsManager == null) {
-                wsManager = new WebSocketConnectionManager(
-                        symbolIntervals, handler, maxReconnectAttempts, baseReconnectDelaySeconds);
+                wsManager =
+                        new WebSocketConnectionManager(
+                                symbolIntervals,
+                                handler,
+                                maxReconnectAttempts,
+                                baseReconnectDelaySeconds);
                 wsManager.connect();
             } else {
                 wsManager.updateSubscriptions(symbolIntervals);
@@ -67,12 +73,12 @@ public class WebSocketServiceImpl implements WebSocketService {
             log.info("Retorna estratégias para o WS");
             List<Estrategia> estrategias = redisService.buscarEstrategiasAtivasRedis();
 
-            Map<String, List<String>> symbolIntervals = estrategiaWebSocketMapper.toSymbolIntervals(estrategias);
+            Map<String, List<String>> symbolIntervals =
+                    estrategiaWebSocketMapper.toSymbolIntervals(estrategias);
             conect(symbolIntervals);
         } catch (RuntimeException e) {
             log.error("Erro ao Retorna estratégias para o WS: ", e);
             throw new RuntimeException("Erro ao Retorna estratégias para o WS", e);
         }
     }
-
 }

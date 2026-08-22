@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<!--
+  Divida conhecida, uma linha por caso. Nao e' lista de excecoes permanentes:
+  cada entrada sai daqui quando a classe correspondente for refatorada.
+  Codigo novo nao entra nesta lista.
+
+  Vazia: a migracao para Quarkus reescreveu o codigo todo e nada ficou devendo.
+-->
+<suppressions>
+</suppressions>

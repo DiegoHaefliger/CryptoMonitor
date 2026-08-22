@@ -1,6 +1,5 @@
 package com.haefliger.cryptomonitor.strategy;
 
-
 import com.haefliger.cryptomonitor.entity.Estrategia;
 import com.haefliger.cryptomonitor.enums.OperadorComparacaoEnum;
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
@@ -8,18 +7,16 @@ import com.haefliger.cryptomonitor.service.KafkaService;
 import com.haefliger.cryptomonitor.strategy.domain.PrecoSimboloDomain;
 import com.haefliger.cryptomonitor.utils.Formatter;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Author diego-haefliger
  * Date 25/06/25
  */
-
 @ApplicationScoped
 public class EstrategiaRSI implements AnaliseEstrategia {
 
@@ -35,13 +32,18 @@ public class EstrategiaRSI implements AnaliseEstrategia {
     }
 
     @Override
-    public void analisar(List<PrecoSimboloDomain> historicoPreco, String simboloIntervalo, List<Estrategia> estrategias) {
+    public void analisar(
+            List<PrecoSimboloDomain> historicoPreco,
+            String simboloIntervalo,
+            List<Estrategia> estrategias) {
         List<Double> rsiValues = calcularRSI(historicoPreco);
         double rsiAnterior = rsiValues.get(0);
         double rsiAtual = rsiValues.get(1);
         for (Estrategia estrategia : estrategias) {
             if (estrategia.getCondicoes() == null || estrategia.getCondicoes().isEmpty()) {
-                log.warn("Nenhuma condição definida para a estratégia de RSI no símbolo: {}", simboloIntervalo);
+                log.warn(
+                        "Nenhuma condição definida para a estratégia de RSI no símbolo: {}",
+                        simboloIntervalo);
                 continue;
             }
 
@@ -52,9 +54,14 @@ public class EstrategiaRSI implements AnaliseEstrategia {
 
             if (isValorAnterior && !isValorAlvo) {
                 sendMessage(simboloIntervalo, rsiAlvo, operacao);
-                log.info("RSI atual {} anterior {} é {} que o alvo {} para o símbolo: {}", rsiAtual, rsiAnterior, operacao.getSimbolo(), rsiAlvo, simboloIntervalo);
+                log.info(
+                        "RSI atual {} anterior {} é {} que o alvo {} para o símbolo: {}",
+                        rsiAtual,
+                        rsiAnterior,
+                        operacao.getSimbolo(),
+                        rsiAlvo,
+                        simboloIntervalo);
             }
-
         }
         log.info("Analisando {} com estratégia de RSI {}", simboloIntervalo, rsiAtual);
     }
@@ -63,7 +70,10 @@ public class EstrategiaRSI implements AnaliseEstrategia {
         final int periodo = PERIODO_RSI;
 
         if (historicoPreco == null || historicoPreco.size() < periodo + 1) {
-            log.warn("Histórico de preço insuficiente para calcular RSI. Necessário: {}. Disponível: {}", periodo + 1, historicoPreco != null ? historicoPreco.size() : 0);
+            log.warn(
+                    "Histórico de preço insuficiente para calcular RSI. Necessário: {}. Disponível: {}",
+                    periodo + 1,
+                    historicoPreco != null ? historicoPreco.size() : 0);
             return List.of(0.0, 0.0);
         }
 
@@ -74,7 +84,9 @@ public class EstrategiaRSI implements AnaliseEstrategia {
         double loss = 0.0;
 
         for (int i = 1; i <= periodo; i++) {
-            double change = sortedHistorico.get(i).price().doubleValue() - sortedHistorico.get(i - 1).price().doubleValue();
+            double change =
+                    sortedHistorico.get(i).price().doubleValue()
+                            - sortedHistorico.get(i - 1).price().doubleValue();
             if (change > 0) {
                 gain += change;
             } else {
@@ -94,7 +106,9 @@ public class EstrategiaRSI implements AnaliseEstrategia {
 
         // Suavização de Wilder e cálculo dos próximos RSIs
         for (int i = periodo + 1; i < sortedHistorico.size(); i++) {
-            double change = sortedHistorico.get(i).price().doubleValue() - sortedHistorico.get(i - 1).price().doubleValue();
+            double change =
+                    sortedHistorico.get(i).price().doubleValue()
+                            - sortedHistorico.get(i - 1).price().doubleValue();
             double currentGain = change > 0 ? change : 0;
             double currentLoss = change < 0 ? -change : 0;
 
@@ -126,13 +140,13 @@ public class EstrategiaRSI implements AnaliseEstrategia {
         try {
             String simbolo = simboloIntervalo.split("-")[0];
             String intervalo = Formatter.formatInterval(simboloIntervalo.split("-")[1]);
-            String valorRsi = String.format(MENSAGEM_RSI, operacao.getSimbolo(), String.format("%.0f", rsi));
-            String[] parametros = new String[]{simbolo, valorRsi, intervalo};
+            String valorRsi =
+                    String.format(MENSAGEM_RSI, operacao.getSimbolo(), String.format("%.0f", rsi));
+            String[] parametros = new String[] {simbolo, valorRsi, intervalo};
 
             kafkaService.sendMessageEstrategias(TipoIndicadorEnum.RSI, parametros);
         } catch (Exception e) {
             log.error("Erro ao enviar mensagem para o Kafka: {}", e.getMessage());
         }
     }
-
 }

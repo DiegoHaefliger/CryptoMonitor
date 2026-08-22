@@ -3,7 +3,6 @@ package com.haefliger.cryptomonitor.repository;
 import com.haefliger.cryptomonitor.entity.Estrategia;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
-
 import java.util.List;
 import java.util.Optional;
 

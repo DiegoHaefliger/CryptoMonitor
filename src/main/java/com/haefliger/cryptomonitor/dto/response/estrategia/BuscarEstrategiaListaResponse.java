@@ -13,5 +13,4 @@ public record BuscarEstrategiaListaResponse(
         boolean permanente,
         LocalDateTime dateCreated,
         LocalDateTime dateLastUpdate,
-        List<BuscarEstrategiaCondicaoResponse> condicoes) {
-}
+        List<BuscarEstrategiaCondicaoResponse> condicoes) {}
