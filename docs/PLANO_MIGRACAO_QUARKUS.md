@@ -426,10 +426,24 @@ Solução: usar a **API core** do ArchUnit (`com.tngtech.archunit:archunit`) den
 testes JUnit comuns, importando as classes com `ClassFileImporter` e chamando
 `rule.check(...)`. Cada regra vira um `@Test` de verdade, reportado individualmente.
 
-**Isso vale para o `trade/backend` também:** o `LayeredArchitectureTest` de lá usa
-`@ArchTest` com o engine. Se aquele projeto estiver na mesma faixa de JUnit Platform, o
-gate de camadas dele pode estar passando sem executar nada. Vale conferir se a linha
-`Tests run:` daquele teste mostra zero.
+**O `trade/backend` está na mesma situação.** O `dependency:tree` do módulo `app` de lá
+resolve exatamente a combinação que aqui não funcionou:
+
+```
+org.junit.platform:junit-platform-engine:jar:6.0.3:test
+com.tngtech.archunit:archunit-junit5:jar:1.3.0:test
+```
+
+O `<junit.version>5.11.4</junit.version>` do pom fixa só o `junit-jupiter`; a plataforma
+continua vindo do `quarkus-bom` em 6.0.3. Ou seja: o `LayeredArchitectureTest` e todo o
+mecanismo de `archunit_store` daquele projeto provavelmente **não executam nada** — o gate
+de camadas mais o congelamento de dívida, ambos silenciosamente inertes.
+
+Não rodei o build de lá para confirmar na prática: o `CLAUDE.md` daquele projeto avisa que
+um build reescreve o `archunit_store`, e mexer no working tree dele está fora do escopo
+desta migração. Para conferir com segurança, basta olhar a linha `Tests run:` do
+`LayeredArchitectureTest` no próximo build — se disser `0`, é o mesmo problema, e a
+correção é a mesma: API core em vez do engine.
 
 **Regras conferidas com violação injetada.** Um `EstrategiaRepository` e uma `Estrategia`
 como campo do Controller quebraram três regras (`Controller nao deve depender de
