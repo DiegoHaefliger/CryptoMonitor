@@ -255,4 +255,21 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- Sem este perfil o `-Dnative` da linha de comando nao liga nada e o build
+             termina normal, dando a falsa impressao de nativo bem-sucedido. -->
+        <profile>
+            <id>native</id>
+            <activation>
+                <property>
+                    <name>native</name>
+                </property>
+            </activation>
+            <properties>
+                <quarkus.native.enabled>true</quarkus.native.enabled>
+                <quarkus.package.jar.enabled>false</quarkus.package.jar.enabled>
+            </properties>
+        </profile>
+    </profiles>
 </project>

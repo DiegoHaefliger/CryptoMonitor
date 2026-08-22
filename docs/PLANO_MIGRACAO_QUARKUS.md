@@ -452,17 +452,141 @@ dentro`). Gate que nunca falhou não é gate — este falha.
 
 **Saída:** 89 testes verdes, três gates ativos, nenhuma dívida congelada.
 
-### F7 — Limpeza (opcional, depois do corte)
+### F7 — Limpeza — **CONCLUÍDA (21/08/2026)**
 
-- `EstrategiaServiceImpl` e afins: aplicar o limite de ~300 linhas / 5 responsabilidades
-  do PADRÕES.
-- Avaliar build nativo (GraalVM) — a `Java-WebSocket` e a reflexão do Jackson exigem
-  registro de reflexão; só depois de tudo estável, e apenas com ganho medido de
-  memória/boot, não por princípio.
-- Revisar o `KafkaService.sendMessage(String topic, ...)`: com canal fixo, o parâmetro
-  `topic` deixou de ter função.
+**Tamanho de classe: nada a fazer.** O limite de ~300 linhas do `PADROES_CODIGO.md` já
+está satisfeito. Maior arquivo é `WebSocketClient` com 207 linhas; o
+`EstrategiaServiceImpl`, que o plano mandava fatiar, tem 139. A remoção do Lombok fez os
+arquivos crescerem em acessores explícitos e mesmo assim ninguém passou do limite.
 
-(A remoção do Lombok saiu daqui — pela D4 acontece na F4.)
+**Código morto removido** — nenhum destes era chamado em produção:
+
+| Item | Situação |
+|---|---|
+| `CryptoPriceDomain` | Record inteiro, sem uma única referência no projeto |
+| `KafkaEnum.fromTopic` | Nunca chamado |
+| `WebSocketConnectionManager.isConnected` | Nunca chamado |
+| `MultiSymboPriceHandler.getPrices` | Declarado na interface e implementado, nunca usado |
+| `KafkaService.sendMessage(String, String, Object)` | As estratégias sempre publicaram por `sendMessageEstrategias`; o método genérico só era exercitado pelo próprio teste. Levou junto `validateInputs` e `serialize`, que só existiam para ele |
+
+O plano previa revisar o parâmetro `topic` desse método por ter "perdido a função" com o
+canal fixo. Não perdeu — a F4 manteve o tópico dinâmico por metadata. O método inteiro é
+que era morto.
+
+**Cabeçalhos `Author`/`Date`** saíram de 10 arquivos: autoria e data são do git, e o
+`PADROES_CODIGO.md` proíbe narrativa de data em comentário.
+
+Resultado: 2.546 linhas de `main`, 87 testes verdes com os três gates ligados.
+
+#### Achado: o `pom.xml` não tinha o perfil `native`
+
+A primeira tentativa de build nativo terminou em `BUILD SUCCESS` **em 7,8 segundos** — o
+que é impossível para uma compilação nativa. O `pom.xml` desta migração foi escrito à mão
+e não tinha o perfil `native` que o gerador do Quarkus cria, então `-Dnative` na linha de
+comando não ligava nada: o build seguia normal e terminava verde.
+
+É a mesma classe de falha do ArchUnit na F6 — **o comando passa sem fazer o que se
+pretendia**. Perfil adicionado ao `pom.xml`, com comentário dizendo exatamente isso.
+
+#### Medição do consumo em JVM (base de comparação para o nativo)
+
+| Configuração | Boot | RSS depois de servir requisições |
+|---|---|---|
+| Default (heap máx. 6 GB, 25% da RAM) | 4,30 s | **355 MB** |
+| `-Xms64m -Xmx256m -XX:MaxMetaspaceSize=128m` | 4,32 s | **324 MB** |
+
+Limitar o heap economiza só 31 MB: o peso **não está no heap**, e sim em metaspace, code
+cache, threads e buffers nativos do Netty. Ou seja, a saída barata (mexer em `-Xmx`) não
+resolve — se o objetivo for reduzir memória, o nativo é o caminho de verdade.
+
+#### Build nativo: funciona, e mede-se assim
+
+Compilado com Mandrel em container (`quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:jdk-25`).
+Três tentativas até sair:
+
+| Tentativa | `native-image-xmx` | Resultado |
+|---|---|---|
+| 1 | default | `exit 137` (OOM) em 5m33 |
+| 2 | `10g` | `exit 137` — **159% da memória do sistema**, segundo o próprio log |
+| 3 | `4g` | **BUILD SUCCESS** em 8m38, binário de 143,7 MB |
+
+A causa das duas primeiras não era o app: **o Docker desta máquina só enxerga 5,59 GB**
+(limite da VM do Docker Desktop), então pedir 10 GB garantia o SIGKILL. Quem for repetir
+precisa ou subir o limite do Docker, ou manter `-Dquarkus.native.native-image-xmx` abaixo
+dele.
+
+**Medição, que é o critério que este plano exigia:**
+
+| | Boot | RSS servindo requisições |
+|---|---|---|
+| JVM default (heap máx. 6 GB) | 4,30 s | 355 MB |
+| JVM `-Xms64m -Xmx256m` | 4,32 s | 324 MB |
+| **Nativo** | **1,73 s** | **168 MB** |
+
+Metade da memória e boot 2,5x mais rápido. Para um processo que fica de pé o tempo todo
+numa VPS, o que interessa é o RSS — e limitar o heap na JVM economiza só 31 MB, porque o
+peso está em metaspace, code cache e buffers do Netty, não no heap.
+
+**Os riscos que este plano previa não se confirmaram:** a `Java-WebSocket` conecta na
+Bybit normalmente no nativo (`WebSocket Aberto` no log) e o Gson funciona. Liquibase roda
+os 7 changesets, Kafka conecta, e as rotas respondem idênticas, incluindo o 400 do
+parâmetro ausente.
+
+**O risco que ninguém tinha previsto — e que falha calado:**
+
+```
+No serializer found for class EstrategiaCacheDTO ... This appears to be a native image,
+in which case you may need to configure reflection for the class that is to be serialized
+```
+
+Os DTOs de cache são serializados **direto pelo `ObjectMapper`, fora do REST**, então o
+Quarkus não descobre esses records sozinho na compilação nativa. E o erro cai no `catch`
+do `RedisServiceImpl`: no nativo o cache **nunca populava, em silêncio**, e toda leitura
+ia ao banco. Só apareceu porque o Redis foi conferido depois de exercitar as rotas, em vez
+de tomar o `200 OK` como prova.
+
+Corrigido com `@RegisterForReflection` nos dois records e verificado num segundo build
+nativo: `Estrategias ativas salvas no Redis: 1`, zero erro de serialização.
+
+#### Corrida na atualização assíncrona do cache
+
+Durante os testes do nativo apareceu uma vez:
+
+```
+GenericJDBCException: Could not extract column [15] from JDBC ResultSet
+[Este ResultSet está fechado.]
+```
+
+Aconteceu quando a tarefa de startup e a do `afterCommit` de um POST rodaram ao mesmo
+tempo, em threads de executor diferentes. `atualizaEstrategiasWS` chamava o repositório
+**fora de transação e fora de contexto de request**, e o `EntityManager` injetado não é
+seguro entre threads nessa condição. O efeito é o pior possível: o cache é apagado pelo
+`afterCommit` e a reescrita falha, deixando a chave vazia sem ninguém perceber.
+
+**Não é defeito do nativo.** Não reproduziu em mais quatro tentativas — duas no nativo e
+duas na JVM, incluindo POSTs concorrentes com o banco já populado. É corrida
+intermitente, e o nativo só teve o azar de exibi-la.
+
+Corrigido com `@Transactional` em `RedisServiceImpl.buscarEstrategiasAtivasRedis`, para
+cada chamada assíncrona ganhar sessão própria. **Ressalva honesta:** como o erro não
+reproduz sob demanda, a correção é justificada pelo mecanismo, não provada por um teste
+que falhava antes e passa depois. O que dá para afirmar é que o caminho segue verde sob
+concorrência (5 POSTs simultâneos, cache reescrito, zero erro de sessão).
+
+#### Recomendação sobre o nativo
+
+Funciona e o ganho é real, mas **não adotar agora**. O corte para Quarkus já é a mudança
+grande desta rodada; trocar também o modo de execução dobraria a superfície de risco no
+mesmo deploy. O binário compilado prova que o caminho está aberto — e o
+`@RegisterForReflection` que ele exigiu já está no código, então a dívida técnica para
+adotar depois é praticamente zero.
+
+Quando for adotar, lembrar: o build nativo **não roda nos testes**. Um `@QuarkusIntegrationTest`
+exercitando o cache seria o gate que teria pego o erro de reflexão antes do deploy.
+
+**Saída da F7:** código morto removido, 87 testes verdes, build nativo avaliado com número
+em vez de palpite, e dois defeitos corrigidos que só apareceram por rodar o app de verdade.
+
 
 ## 5. Riscos
 

@@ -12,6 +12,7 @@ import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +54,12 @@ public class RedisServiceImpl implements RedisService {
         }
     }
 
+    // Chamado de thread de executor (EstrategiaAsyncService), fora de request e fora de
+    // transacao. Sem isto o EntityManager injetado nao tem sessao propria por chamada e
+    // duas atualizacoes simultaneas se atropelam ("ResultSet esta fechado"), deixando o
+    // cache apagado sem nunca ser reescrito.
     @Override
+    @Transactional
     public List<Estrategia> buscarEstrategiasAtivasRedis() {
         List<EstrategiaCacheDTO> cacheDTOs = lerCache();
         if (cacheDTOs != null && !cacheDTOs.isEmpty()) {
