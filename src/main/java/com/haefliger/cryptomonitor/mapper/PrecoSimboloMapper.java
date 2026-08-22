@@ -5,10 +5,6 @@ import com.haefliger.cryptomonitor.ws.domain.PricePointDomain;
 import org.mapstruct.CollectionMappingStrategy;
 import org.mapstruct.Mapper;
 
-/**
- * Author diego-haefliger
- * Date 26/06/25
- */
 @Mapper(collectionMappingStrategy = CollectionMappingStrategy.ADDER_PREFERRED)
 public interface PrecoSimboloMapper {
 

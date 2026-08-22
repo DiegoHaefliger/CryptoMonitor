@@ -14,10 +14,6 @@ import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Author diego-haefliger
- * Date 14/06/25
- */
 @ApplicationScoped
 public class MultiSymboPriceHandlerService implements MultiSymboPriceHandler {
 
@@ -78,12 +74,6 @@ public class MultiSymboPriceHandlerService implements MultiSymboPriceHandler {
                     existingPrices.get(0).price(),
                     existingPrices.get(0).timestamp());
         }
-    }
-
-    public List<PricePointDomain> getPrices(String symbol, String interval) {
-        return Collections.unmodifiableList(
-                priceMap.getOrDefault(symbol, Collections.emptyMap())
-                        .getOrDefault(interval, Collections.emptyList()));
     }
 
     public void clearAll() {

@@ -1,14 +1,12 @@
 package com.haefliger.cryptomonitor.service.implement;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
 import io.smallrye.reactive.messaging.kafka.api.OutgoingKafkaRecordMetadata;
-import java.util.Map;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.junit.jupiter.api.DisplayName;
@@ -72,31 +70,5 @@ class KafkaServiceImplTest {
         service().sendMessageEstrategias(TipoIndicadorEnum.RSI, new String[] {"BTCUSDT"});
 
         verifyNoInteractions(emitter);
-    }
-
-    @Test
-    @DisplayName(
-            "o tópico continua sendo parâmetro em runtime, sobrescrito por metadata da mensagem")
-    void sendMessageSerializaObjetoComoJson() {
-        service().sendMessage("qualquer", "chave", Map.of("a", 1));
-
-        Message<String> mensagem = mensagemPublicada();
-        assertTopicoEChave(mensagem, "qualquer", "chave");
-        assertThat(mensagem.getPayload()).isEqualTo("{\"a\":1}");
-    }
-
-    @Test
-    @DisplayName(
-            "tópico, chave ou objeto nulo viram RuntimeException, não IllegalArgumentException")
-    void validacaoDeEntrada() {
-        assertThatThrownBy(() -> service().sendMessage(null, "chave", "x"))
-                .isInstanceOf(RuntimeException.class)
-                .hasRootCauseInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> service().sendMessage("topico", "", "x"))
-                .isInstanceOf(RuntimeException.class)
-                .hasRootCauseInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> service().sendMessage("topico", "chave", null))
-                .isInstanceOf(RuntimeException.class)
-                .hasRootCauseInstanceOf(IllegalArgumentException.class);
     }
 }

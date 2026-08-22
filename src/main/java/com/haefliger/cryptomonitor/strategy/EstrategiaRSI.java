@@ -13,10 +13,6 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Author diego-haefliger
- * Date 25/06/25
- */
 @ApplicationScoped
 public class EstrategiaRSI implements AnaliseEstrategia {
 

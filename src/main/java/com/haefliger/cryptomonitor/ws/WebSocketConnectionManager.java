@@ -60,10 +60,6 @@ public class WebSocketConnectionManager {
         client = null;
     }
 
-    public synchronized boolean isConnected() {
-        return client != null && client.isOpen();
-    }
-
     public synchronized void updateSubscriptions(Map<String, List<String>> newSymbolIntervals)
             throws Exception {
         if (client != null && client.isOpen()) {

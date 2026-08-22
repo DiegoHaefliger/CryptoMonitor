@@ -2,7 +2,6 @@ package com.haefliger.cryptomonitor.service.implement;
 
 import static com.haefliger.cryptomonitor.enums.KafkaEnum.ESTRATEGIA;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
@@ -29,19 +28,6 @@ public class KafkaServiceImpl implements KafkaService {
     KafkaServiceImpl(@Channel("estrategia") Emitter<String> emitter, ObjectMapper objectMapper) {
         this.emitter = emitter;
         this.objectMapper = objectMapper;
-    }
-
-    @Override
-    public void sendMessage(String topic, String key, Object obj) {
-        try {
-            validateInputs(topic, key, obj);
-            String json = serialize(obj);
-            log.info("Sending message to topic: {}, key: {}, value: {}", topic, key, json);
-            publicar(topic, key, json);
-        } catch (Exception e) {
-            log.error("Error preparing to send message: {}", e.getMessage(), e);
-            throw new RuntimeException("Error preparing to send message", e);
-        }
     }
 
     @Override
@@ -73,21 +59,5 @@ public class KafkaServiceImpl implements KafkaService {
                                         .withTopic(topic)
                                         .withKey(key)
                                         .build()));
-    }
-
-    private void validateInputs(String topic, String key, Object obj) {
-        if (topic == null || topic.isEmpty()) {
-            throw new IllegalArgumentException("Topic cannot be null or empty");
-        }
-        if (key == null || key.isEmpty()) {
-            throw new IllegalArgumentException("Key cannot be null or empty");
-        }
-        if (obj == null) {
-            throw new IllegalArgumentException("Object to send cannot be null");
-        }
-    }
-
-    private String serialize(Object obj) throws JsonProcessingException {
-        return objectMapper.writeValueAsString(obj);
     }
 }
