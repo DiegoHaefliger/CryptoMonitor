@@ -384,13 +384,59 @@ podia antes também.
 **Saída:** paridade demonstrada com evidência nos quatro canais (HTTP, OpenAPI, Redis,
 Kafka). O corte pode acontecer.
 
-### F6 — Gates de build (alinhar com `trade/backend`)
+### F6 — Gates de build — **CONCLUÍDA (21/08/2026)**
 
-Spotless (google-java-format AOSP), Checkstyle, e o `LayeredArchitectureTest` do ArchUnit —
-que já cobre exatamente o que o `PADROES_CODIGO.md` pede: Resource sem JPA/Repository/Entity,
-`@Transactional` só em Service. Copiar `config/checkstyle/` do `trade/backend`.
+Mesma configuração do `trade/backend`, para os dois projetos cobrarem a mesma coisa.
+Spotless e Checkstyle rodam na fase `validate`, então `mvn test` já os executa.
 
-Dívida existente entra congelada (store do ArchUnit + suppressions), como lá. Código novo, nunca.
+| Gate | Comando | O que trava |
+|---|---|---|
+| Formatação | `mvn spotless:check` | google-java-format AOSP. Conserta com `mvn spotless:apply` |
+| Estilo | `mvn checkstyle:check` | `System.out`, `printStackTrace`, import não usado, método > 150 linhas, > 10 parâmetros, `if` sem chaves |
+| Camadas | `ArquiteturaEmCamadasTest` | 7 regras do `PADROES_CODIGO.md` |
+
+**Spotless.** Mesmas exceções do outro projeto e mesmo racional: sem formatar Javadoc e
+sem `importOrder` próprio. Só **dois arquivos** estavam fora do formato — o resto do diff
+é reflow do formatador.
+
+**Checkstyle.** Ruleset copiado. As cinco violações apontadas eram `if` sem chaves,
+herdadas verbatim do código Spring, e foram **corrigidas em vez de suprimidas**: o
+`suppressions.xml` nasce vazio. Diferente do `trade/backend`, aqui não há dívida
+congelada — a migração reescreveu o código todo e nada ficou devendo.
+
+**ArchUnit.** Sete regras: Controller sem JPA, sem Repository e sem Entity;
+`@Transactional` só em classe de serviço; Repository sem `jakarta.ws.rs`; Entity sem
+conhecer camada de cima; e dependência sempre para dentro.
+
+#### Armadilha: o engine do ArchUnit não funciona no JUnit 6
+
+A primeira versão usava `archunit-junit5` com `@ArchTest`, igual ao `trade/backend`. O
+build passava — **com zero regra executada**:
+
+```
+Tests run: 0, Failures: 0, Errors: 0 -- in ArquiteturaEmCamadasTest
+```
+
+O engine `archunit-junit5` mira o JUnit Platform **1.x**, e o Quarkus 3.33 já traz o
+**6.0.3**, então o engine não é descoberto e os campos `@ArchTest` nunca viram teste.
+Subir o ArchUnit de 1.3.0 para 1.4.1 não resolveu — nenhuma versão atual suporta a
+plataforma 6.
+
+Solução: usar a **API core** do ArchUnit (`com.tngtech.archunit:archunit`) dentro de
+testes JUnit comuns, importando as classes com `ClassFileImporter` e chamando
+`rule.check(...)`. Cada regra vira um `@Test` de verdade, reportado individualmente.
+
+**Isso vale para o `trade/backend` também:** o `LayeredArchitectureTest` de lá usa
+`@ArchTest` com o engine. Se aquele projeto estiver na mesma faixa de JUnit Platform, o
+gate de camadas dele pode estar passando sem executar nada. Vale conferir se a linha
+`Tests run:` daquele teste mostra zero.
+
+**Regras conferidas com violação injetada.** Um `EstrategiaRepository` e uma `Estrategia`
+como campo do Controller quebraram três regras (`Controller nao deve depender de
+Repository`, `Controller nao deve depender de Entity` e `Dependencia sempre para
+dentro`). Gate que nunca falhou não é gate — este falha.
+
+**Saída:** 89 testes verdes, três gates ativos, nenhuma dívida congelada.
 
 ### F7 — Limpeza (opcional, depois do corte)
 
