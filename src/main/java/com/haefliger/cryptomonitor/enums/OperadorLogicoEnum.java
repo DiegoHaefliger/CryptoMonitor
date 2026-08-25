@@ -1,7 +1,6 @@
 package com.haefliger.cryptomonitor.enums;
 
 public enum OperadorLogicoEnum {
-
     AND,
     OR;
 
@@ -17,10 +16,11 @@ public enum OperadorLogicoEnum {
     public static String valoresValidos() {
         StringBuilder sb = new StringBuilder();
         for (OperadorLogicoEnum op : values()) {
-            if (!sb.isEmpty()) sb.append(", ");
+            if (!sb.isEmpty()) {
+                sb.append(", ");
+            }
             sb.append(op.name());
         }
         return sb.toString();
     }
 }
-

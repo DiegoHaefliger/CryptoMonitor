@@ -1,36 +1,41 @@
 package com.haefliger.cryptomonitor.ws;
 
 import com.haefliger.cryptomonitor.ws.service.MultiSymboPriceHandler;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Slf4j
-@Component
 public class WebSocketConnectionManager {
-    @Getter
+
+    private static final Logger log = LoggerFactory.getLogger(WebSocketConnectionManager.class);
+
     private WebSocketClient client;
     private final MultiSymboPriceHandler handler;
     private Map<String, List<String>> symbolIntervals;
-    private final ScheduledExecutorService reconnectExecutor = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService reconnectExecutor =
+            Executors.newSingleThreadScheduledExecutor();
     private int reconnectAttempts = 0;
 
-    @Value("${websocket.max-reconnect-attempts:10}")
-    private int maxReconnectAttempts;
+    private final int maxReconnectAttempts;
+    private final int baseReconnectDelaySeconds;
 
-    @Value("${websocket.base-reconnect-delay-seconds:5}")
-    private int baseReconnectDelaySeconds;
-
-    public WebSocketConnectionManager(Map<String, List<String>> symbolIntervals, MultiSymboPriceHandler handler) {
+    public WebSocketConnectionManager(
+            Map<String, List<String>> symbolIntervals,
+            MultiSymboPriceHandler handler,
+            int maxReconnectAttempts,
+            int baseReconnectDelaySeconds) {
         this.symbolIntervals = symbolIntervals;
         this.handler = handler;
+        this.maxReconnectAttempts = maxReconnectAttempts;
+        this.baseReconnectDelaySeconds = baseReconnectDelaySeconds;
+    }
+
+    public WebSocketClient getClient() {
+        return client;
     }
 
     public synchronized void connect() throws Exception {
@@ -55,43 +60,44 @@ public class WebSocketConnectionManager {
         client = null;
     }
 
-    public synchronized boolean isConnected() {
-        return client != null && client.isOpen();
-    }
-
-    public synchronized void updateSubscriptions(Map<String, List<String>> newSymbolIntervals) throws Exception {
+    public synchronized void updateSubscriptions(Map<String, List<String>> newSymbolIntervals)
+            throws Exception {
         if (client != null && client.isOpen()) {
             client.updateSubscriptions(newSymbolIntervals);
             this.symbolIntervals = newSymbolIntervals;
             log.info("Assinaturas do WebSocket atualizadas.");
         } else {
-            // Se não estiver conectado, atualiza symbolIntervals e conecta
             this.symbolIntervals = newSymbolIntervals;
             connect();
         }
     }
 
     private void onConnectionLost() {
-        Runnable retryTask = new Runnable() {
-            @Override
-            public void run() {
-                if (reconnectAttempts >= maxReconnectAttempts) {
-                    log.error("Limite máximo de tentativas de reconexão do WebSocket atingido.");
-                    return;
-                }
-                int delay = baseReconnectDelaySeconds * (reconnectAttempts + 1);
-                log.warn("WebSocket desconectado. Tentando reconectar em {} segundos (tentativa {}/{})...", delay, reconnectAttempts + 1, maxReconnectAttempts);
-                try {
-                    connect();
-                    log.info("Reconexão WebSocket realizada com sucesso.");
-                } catch (Exception e) {
-                    log.error("Falha ao tentar reconectar WebSocket", e);
-                    reconnectAttempts++;
-                    reconnectExecutor.schedule(this, delay, TimeUnit.SECONDS);
-                }
-            }
-        };
+        Runnable retryTask =
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        if (reconnectAttempts >= maxReconnectAttempts) {
+                            log.error(
+                                    "Limite máximo de tentativas de reconexão do WebSocket atingido.");
+                            return;
+                        }
+                        int delay = baseReconnectDelaySeconds * (reconnectAttempts + 1);
+                        log.warn(
+                                "WebSocket desconectado. Tentando reconectar em {} segundos (tentativa {}/{})...",
+                                delay,
+                                reconnectAttempts + 1,
+                                maxReconnectAttempts);
+                        try {
+                            connect();
+                            log.info("Reconexão WebSocket realizada com sucesso.");
+                        } catch (Exception e) {
+                            log.error("Falha ao tentar reconectar WebSocket", e);
+                            reconnectAttempts++;
+                            reconnectExecutor.schedule(this, delay, TimeUnit.SECONDS);
+                        }
+                    }
+                };
         reconnectExecutor.schedule(retryTask, baseReconnectDelaySeconds, TimeUnit.SECONDS);
     }
-
 }

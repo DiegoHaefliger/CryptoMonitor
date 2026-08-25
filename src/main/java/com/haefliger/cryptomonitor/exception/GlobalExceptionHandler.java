@@ -2,38 +2,35 @@ package com.haefliger.cryptomonitor.exception;
 
 import com.haefliger.cryptomonitor.exception.dto.ApiErrorDetailResponse;
 import com.haefliger.cryptomonitor.exception.dto.ApiErrorResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-
+import jakarta.validation.ConstraintViolationException;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
 import java.time.ZonedDateTime;
 import java.util.List;
 
-@ControllerAdvice
-public class GlobalExceptionHandler {
+@Provider
+public class GlobalExceptionHandler implements ExceptionMapper<ConstraintViolationException> {
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiErrorResponse> handleValidationException(MethodArgumentNotValidException ex, HttpServletRequest request) {
+    @Context UriInfo uriInfo;
 
-        List<ApiErrorDetailResponse> errors = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(error -> ApiErrorDetailResponse.builder().defaultMessage(error.getDefaultMessage()).build())
-                .toList();
+    @Override
+    public Response toResponse(ConstraintViolationException ex) {
+        List<ApiErrorDetailResponse> errors =
+                ex.getConstraintViolations().stream()
+                        .map(violation -> new ApiErrorDetailResponse(violation.getMessage()))
+                        .toList();
 
-        ApiErrorResponse response = ApiErrorResponse
-                .builder()
-                .timestamp(ZonedDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .errors(errors)
-                .path(request.getRequestURI())
-                .build();
+        ApiErrorResponse response =
+                new ApiErrorResponse(
+                        ZonedDateTime.now(),
+                        Response.Status.BAD_REQUEST.getStatusCode(),
+                        "Bad Request",
+                        errors,
+                        uriInfo.getAbsolutePath().getPath());
 
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        return Response.status(Response.Status.BAD_REQUEST).entity(response).build();
     }
-
 }

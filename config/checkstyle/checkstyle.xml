@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!--
+  Higiene de codigo. Formatacao NAO entra aqui — quem cuida disso e o Spotless
+  (google-java-format AOSP), que corrige sozinho com `mvn spotless:apply`.
+
+  As regras de camada (Controller sem EntityManager, @Transactional so em
+  servico, etc.) tambem nao entram aqui: sao ArquiteturaEmCamadasTest.
+
+  Mesmo conteudo do gate do trade/backend, para os dois projetos cobrarem a
+  mesma coisa.
+-->
+<module name="Checker">
+  <property name="severity" value="error"/>
+  <property name="fileExtensions" value="java"/>
+
+  <module name="SuppressionFilter">
+    <property name="file" value="${checkstyle.suppressions.file}"/>
+    <property name="optional" value="true"/>
+  </module>
+
+  <module name="NewlineAtEndOfFile"/>
+  <module name="FileTabCharacter"/>
+
+  <!-- Log estruturado. Nada de print solto em producao. -->
+  <module name="RegexpSingleline">
+    <property name="format" value="System\.(out|err)\.print"/>
+    <property name="message" value="Use o logger, nao System.out/System.err."/>
+  </module>
+  <module name="RegexpSingleline">
+    <property name="format" value="\.printStackTrace\(\)"/>
+    <property name="message" value="Registre a excecao no logger em vez de printStackTrace()."/>
+  </module>
+
+  <module name="TreeWalker">
+    <module name="UnusedImports"/>
+    <module name="RedundantImport"/>
+    <module name="IllegalImport"/>
+
+    <module name="EqualsHashCode"/>
+    <module name="StringLiteralEquality"/>
+    <module name="SimplifyBooleanExpression"/>
+    <module name="SimplifyBooleanReturn"/>
+    <module name="EmptyStatement"/>
+    <module name="OneStatementPerLine"/>
+    <module name="FallThrough"/>
+    <module name="MissingSwitchDefault"/>
+    <module name="DefaultComesLast"/>
+    <module name="ModifierOrder"/>
+    <module name="UpperEll"/>
+    <module name="ArrayTypeStyle"/>
+    <module name="NeedBraces"/>
+    <module name="CovariantEquals"/>
+    <module name="NoFinalizer"/>
+
+    <module name="PackageDeclaration"/>
+    <module name="OuterTypeFilename"/>
+
+    <module name="MethodLength">
+      <property name="max" value="150"/>
+      <property name="countEmpty" value="false"/>
+    </module>
+    <!-- Record e' formato de dado, nao assinatura: so metodo e construtor entram. -->
+    <module name="ParameterNumber">
+      <property name="max" value="10"/>
+      <property name="tokens" value="METHOD_DEF, CTOR_DEF"/>
+    </module>
+  </module>
+</module>

@@ -100,4 +100,20 @@
     </changeSet>
 
 
+    <!-- valor sempre foi numerico no codigo (BigDecimal 20,8); o TEXT original so passava
+         porque o MySQL rodava sem schema-validation do Hibernate -->
+    <changeSet id="8-alter-column-valor-condicoes-estrategia" author="diego.haefliger">
+        <sql dbms="postgresql">
+            ALTER TABLE condicoes_estrategia
+            ALTER COLUMN valor TYPE NUMERIC(20, 8) USING valor::numeric;
+        </sql>
+        <sql dbms="mysql">
+            ALTER TABLE condicoes_estrategia
+            MODIFY COLUMN valor DECIMAL(20, 8) NOT NULL;
+        </sql>
+        <rollback>
+            <modifyDataType tableName="condicoes_estrategia" columnName="valor" newDataType="TEXT"/>
+        </rollback>
+    </changeSet>
+
 </databaseChangeLog>

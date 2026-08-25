@@ -3,19 +3,22 @@ package com.haefliger.cryptomonitor.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.haefliger.cryptomonitor.enums.OperadorComparacaoEnum;
 import com.haefliger.cryptomonitor.enums.TipoIndicadorEnum;
-import jakarta.persistence.*;
-import lombok.*;
-
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
 @Entity
-@ToString(exclude = {"estrategia"})
 @Table(name = "condicoes_estrategia")
 public class CondicaoEstrategia implements Serializable {
 
@@ -47,5 +50,66 @@ public class CondicaoEstrategia implements Serializable {
         if (dateCreated == null) {
             dateCreated = LocalDateTime.now();
         }
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Estrategia getEstrategia() {
+        return estrategia;
+    }
+
+    public void setEstrategia(Estrategia estrategia) {
+        this.estrategia = estrategia;
+    }
+
+    public TipoIndicadorEnum getTipoIndicador() {
+        return tipoIndicador;
+    }
+
+    public void setTipoIndicador(TipoIndicadorEnum tipoIndicador) {
+        this.tipoIndicador = tipoIndicador;
+    }
+
+    public OperadorComparacaoEnum getOperador() {
+        return operador;
+    }
+
+    public void setOperador(OperadorComparacaoEnum operador) {
+        this.operador = operador;
+    }
+
+    public BigDecimal getValor() {
+        return valor;
+    }
+
+    public void setValor(BigDecimal valor) {
+        this.valor = valor;
+    }
+
+    public LocalDateTime getDateCreated() {
+        return dateCreated;
+    }
+
+    public void setDateCreated(LocalDateTime dateCreated) {
+        this.dateCreated = dateCreated;
+    }
+
+    @Override
+    public String toString() {
+        return "CondicaoEstrategia{id="
+                + id
+                + ", tipoIndicador="
+                + tipoIndicador
+                + ", operador="
+                + operador
+                + ", valor="
+                + valor
+                + "}";
     }
 }

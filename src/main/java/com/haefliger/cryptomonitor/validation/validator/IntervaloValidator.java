@@ -12,8 +12,9 @@ public class IntervaloValidator implements ConstraintValidator<IntervaloValido, 
         if (value == null || !IntervaloEnum.isValid(value)) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate(
-                "Intervalo inválido. Valores válidos: " + IntervaloEnum.valoresValidos()
-            ).addConstraintViolation();
+                            "Intervalo inválido. Valores válidos: "
+                                    + IntervaloEnum.valoresValidos())
+                    .addConstraintViolation();
             return false;
         }
         return true;
